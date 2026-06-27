@@ -53,6 +53,10 @@ Top-to-bottom:
    (and a few `data-*` attributes) to `act()`, which performs the real behavior
    (state change, modal, CSV download, email compose).
 
+> **Wiring a real backend (Supabase + Vercel)?** See **[BACKEND_INTEGRATION.md](BACKEND_INTEGRATION.md)** —
+> full schema, the button→table→operation map, copy-paste Supabase wiring, role/RLS
+> security, file uploads, email, Vercel deploy, and the Google-Form mentorship sync.
+
 ### To wire a real backend
 - Swap the mock arrays for fetches to your API.
 - Replace the in-place state mutations in `act()` / `decide()` / the modals with
