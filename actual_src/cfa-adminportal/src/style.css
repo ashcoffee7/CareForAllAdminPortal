@@ -372,6 +372,9 @@ html, body {
   background: var(--border); color: var(--muted);
 }
 .checkin-dot.done { background: #d1fae5; color: #065f46; }
+.checkin-dot.overdue { background: #fee2e2; color: #991b1b; }
+.checkin-dots.clickable { cursor: pointer; }
+.checkin-dots.clickable:hover .checkin-dot { opacity: 0.8; }
 
 .project-status-dot {
   display: inline-flex; align-items: center; gap: 7px;

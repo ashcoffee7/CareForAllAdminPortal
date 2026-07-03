@@ -30,8 +30,20 @@ async function fetchAllProfiles() {
 }
 
 async function fetchAllCheckins() {
-  var { data, error } = await supabase.from('chapter_checkins').select('chapter_name, quarter');
+  var { data, error } = await supabase
+    .from('chapter_checkins')
+    .select('id, chapter_name, quarter, activities, member_count, challenges, submitted_at')
+    .order('submitted_at', { ascending: false });
   if (error) { console.error('chapter_checkins fetch failed:', error.message, error.details, error.hint); return []; }
+  return data;
+}
+
+async function fetchDeadlines(year) {
+  var { data, error } = await supabase
+    .from('checkin_deadlines')
+    .select('quarter, due_date')
+    .eq('year', year);
+  if (error) { console.error('checkin_deadlines fetch failed:', error.message, error.details, error.hint); return []; }
   return data;
 }
 
@@ -50,7 +62,7 @@ async function fetchProjectLogs() {
   return data;
 }
 
-function buildEnrichedChapters(chapters, profiles, checkins, projectLogs) {
+function buildEnrichedChapters(chapters, profiles, checkins, projectLogs, deadlines, currentYear) {
   var memberCountByChapterId = {};
   var leadByChapterId = {};
   profiles.forEach(function (p) {
@@ -72,20 +84,40 @@ function buildEnrichedChapters(chapters, profiles, checkins, projectLogs) {
     }
   });
 
+  var dueDateByQuarter = {};
+  deadlines.forEach(function (d) { dueDateByQuarter[d.quarter] = d.due_date; });
+
   // chapter_checkins.chapter_name is free text, not a foreign key to
   // chapters.id -- matched here by exact name. If real check-in data uses
   // slightly different naming than the chapters table, these won't match.
-  var checkinQuartersByChapterName = {};
+  // chapter_checkins also has no year column, so the year a check-in
+  // "counts for" is derived from submitted_at -- a reasonable proxy, but
+  // not exact (e.g. a late Q4 check-in submitted in January would be
+  // attributed to the wrong year).
+  var checkinsByChapterName = {};
   checkins.forEach(function (c) {
     var key = (c.chapter_name || '').trim();
-    if (!checkinQuartersByChapterName[key]) { checkinQuartersByChapterName[key] = new Set(); }
-    checkinQuartersByChapterName[key].add(c.quarter);
+    if (!checkinsByChapterName[key]) { checkinsByChapterName[key] = []; }
+    checkinsByChapterName[key].push(c);
   });
 
+  var today = new Date();
+
   return chapters.map(function (ch) {
-    var quartersSubmitted = checkinQuartersByChapterName[ch.name] || new Set();
-    var checkinFlags = QUARTERS.map(function (q) { return quartersSubmitted.has(q); });
-    var allCheckinsIn = checkinFlags.every(function (v) { return v; });
+    var chapterCheckins = checkinsByChapterName[ch.name] || [];
+
+    var quarterStatuses = QUARTERS.map(function (q) {
+      var submitted = chapterCheckins.find(function (c) {
+        return c.quarter === q && new Date(c.submitted_at).getFullYear() === currentYear;
+      });
+      if (submitted) { return 'done'; }
+
+      var dueDate = dueDateByQuarter[q];
+      if (dueDate && new Date(dueDate) < today) { return 'overdue'; }
+      return 'pending';
+    });
+
+    var allCheckinsIn = quarterStatuses.every(function (s) { return s === 'done'; });
     var projectCount = projectCountByChapterId[ch.id] || 0;
 
     return {
@@ -95,10 +127,61 @@ function buildEnrichedChapters(chapters, profiles, checkins, projectLogs) {
       lead: leadByChapterId[ch.id] || '-',
       memberCount: memberCountByChapterId[ch.id] || 0,
       projectCount: projectCount,
-      checkinFlags: checkinFlags,
+      quarterStatuses: quarterStatuses,
+      checkins: chapterCheckins,
       compliant: projectCount >= 2 && allCheckinsIn
     };
   });
+}
+
+function renderDeadlinesForm(deadlines, year) {
+  var container = document.getElementById('checkin-deadlines-form');
+  if (!container) { return; }
+
+  var dueDateByQuarter = {};
+  deadlines.forEach(function (d) { dueDateByQuarter[d.quarter] = d.due_date; });
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">';
+  QUARTERS.forEach(function (q) {
+    html += '<div>';
+    html += '<label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">' + q + ' ' + year + '</label>';
+    html += '<input type="date" class="form-input" data-deadline-quarter="' + q + '" value="' + (dueDateByQuarter[q] || '') + '">';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+async function saveDeadlines(year) {
+  var inputs = document.querySelectorAll('#checkin-deadlines-form [data-deadline-quarter]');
+  var rows = [];
+  inputs.forEach(function (input) {
+    if (input.value) {
+      rows.push({ quarter: input.getAttribute('data-deadline-quarter'), year: year, due_date: input.value, updated_at: new Date().toISOString() });
+    }
+  });
+
+  if (rows.length === 0) { return; }
+
+  var { error } = await supabase
+    .from('checkin_deadlines')
+    .upsert(rows, { onConflict: 'quarter,year' });
+
+  var statusEl = document.getElementById('checkin-deadlines-save-status');
+  if (error) {
+    console.error('checkin_deadlines save failed:', error.message, error.details, error.hint);
+    if (statusEl) { statusEl.style.color = 'var(--accent)'; statusEl.textContent = 'Could not save: ' + error.message; }
+    return;
+  }
+
+  if (statusEl) {
+    statusEl.style.color = 'var(--success)';
+    statusEl.textContent = 'Saved.';
+    setTimeout(function () { statusEl.textContent = ''; }, 3000);
+  }
+
+  loadChaptersPage();
 }
 
 function renderStats(enriched) {
@@ -128,20 +211,59 @@ function renderComplianceList(enriched) {
     var statusText = ch.compliant ? 'Compliant' : 'Non-Compliant';
 
     var dots = '';
-    ch.checkinFlags.forEach(function (done, i) {
-      dots += '<div class="checkin-dot' + (done ? ' done' : '') + '">Q' + (i + 1) + '</div>';
+    ch.quarterStatuses.forEach(function (status, i) {
+      var stateClass = status === 'done' ? ' done' : (status === 'overdue' ? ' overdue' : '');
+      var title = status === 'done' ? 'Submitted' : (status === 'overdue' ? 'Overdue' : 'Not yet due');
+      dots += '<div class="checkin-dot' + stateClass + '" title="' + title + '">Q' + (i + 1) + '</div>';
     });
 
     html += '<div class="chapter-status-row">';
     html += '<div class="leader-name">' + escapeHtml(ch.name) + '</div>';
     html += '<div class="leader-meta">' + escapeHtml(ch.lead) + '</div>';
     html += '<div><span class="project-status-dot ' + projectDotClass + '">' + ch.projectCount + ' / 2</span></div>';
-    html += '<div class="checkin-dots">' + dots + '</div>';
+    html += '<div class="checkin-dots clickable" data-view-responses="' + ch.id + '">' + dots + '</div>';
     html += '<div><span class="status-pill ' + statusPillClass + '">' + statusText + '</span></div>';
     html += '</div>';
   });
 
   container.innerHTML = html;
+
+  container.querySelectorAll('[data-view-responses]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var chapter = enriched.find(function (c) { return c.id === el.getAttribute('data-view-responses'); });
+      if (chapter) { openResponsesModal(chapter); }
+    });
+  });
+}
+
+function openResponsesModal(chapter) {
+  var titleEl = document.getElementById('modal-title');
+  var subtitleEl = document.getElementById('modal-subtitle');
+  var bodyEl = document.getElementById('modal-body-content');
+  var overlay = document.getElementById('detail-modal-overlay');
+  if (!titleEl || !subtitleEl || !bodyEl || !overlay) { return; }
+
+  titleEl.textContent = 'Quarterly Check-In Responses';
+  subtitleEl.textContent = chapter.name;
+
+  var body = '';
+  if (chapter.checkins.length === 0) {
+    body = '<div style="text-align:center;padding:20px 0;color:var(--muted);font-size:13px">No check-ins submitted yet.</div>';
+  } else {
+    chapter.checkins.forEach(function (c) {
+      body += '<div class="modal-field-row">';
+      body += '<div class="modal-field-label">' + escapeHtml(c.quarter || '-') + ' &mdash; Submitted ' + formatDate(c.submitted_at) + '</div>';
+      body += '<div class="modal-field-value" style="font-weight:400;margin-top:6px">';
+      body += '<strong>Member Count:</strong> ' + (c.member_count != null ? c.member_count : '-') + '<br>';
+      body += '<strong>Activities:</strong> ' + escapeHtml(c.activities || '-') + '<br>';
+      body += '<strong>Challenges:</strong> ' + escapeHtml(c.challenges || '-');
+      body += '</div>';
+      body += '</div>';
+    });
+  }
+
+  bodyEl.innerHTML = body;
+  overlay.classList.add('open');
 }
 
 function renderDirectoryList(enriched) {
@@ -166,18 +288,28 @@ function renderDirectoryList(enriched) {
 }
 
 export async function loadChaptersPage() {
+  var currentYear = new Date().getFullYear();
+
   var results = await Promise.all([
     fetchAllChapters(),
     fetchAllProfiles(),
     fetchAllCheckins(),
-    fetchProjectLogs()
+    fetchProjectLogs(),
+    fetchDeadlines(currentYear)
   ]);
 
-  var enriched = buildEnrichedChapters(results[0], results[1], results[2], results[3]);
+  var deadlines = results[4];
+  var enriched = buildEnrichedChapters(results[0], results[1], results[2], results[3], deadlines, currentYear);
 
   renderStats(enriched);
+  renderDeadlinesForm(deadlines, currentYear);
   renderComplianceList(enriched);
   renderDirectoryList(enriched);
+
+  var saveBtn = document.getElementById('save-checkin-deadlines-btn');
+  if (saveBtn) {
+    saveBtn.onclick = function () { saveDeadlines(currentYear); };
+  }
 }
 
 export function filterChapterDirectory() {
