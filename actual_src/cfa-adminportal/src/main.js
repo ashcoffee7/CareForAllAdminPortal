@@ -138,7 +138,20 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Firing queries before this resolves sends them out unauthenticated,
   // which RLS silently treats as "no rows" -- not an error, just empty data.
   // Waiting here once, up front, avoids every downstream query racing it.
-  await supabase.auth.getSession();
+  var { data: sessionData } = await supabase.auth.getSession();
+
+  if (!sessionData.session) {
+    window.location.href = '/login.html';
+    return;
+  }
+
+  var signOutBtn = document.querySelector('.sidebar-signout');
+  if (signOutBtn) {
+    signOutBtn.addEventListener('click', async function () {
+      await supabase.auth.signOut();
+      window.location.href = '/login.html';
+    });
+  }
 
   loadCurrentAdmin();
   loadOverviewStats();
