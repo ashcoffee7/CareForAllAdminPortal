@@ -60,8 +60,8 @@ async function loadAllImpactEvents() {
   });
 
   return {
-    totalmembers: (memberRows || []).filter(function (r) { return !!r.created_at; }).map(function (r) { return { date: r.created_at, magnitude: 1 }; }),
-    totalchapters: (chapterRows || []).filter(function (r) { return !!r.created_at; }).map(function (r) { return { date: r.created_at, magnitude: 1 }; }),
+    totalmembers: (memberRows || []).map(function (r) { return { date: r.created_at, magnitude: 1 }; }),
+    totalchapters: (chapterRows || []).map(function (r) { return { date: r.created_at, magnitude: 1 }; }),
     categories: categories
   };
 }
