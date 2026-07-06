@@ -41,10 +41,11 @@ async function fetchAllCheckins() {
 async function fetchDeadlines(year) {
   var { data, error } = await supabase
     .from('checkin_deadlines')
-    .select('quarter, due_date')
-    .eq('year', year);
-  if (error) { console.error('checkin_deadlines fetch failed:', error.message, error.details, error.hint); return []; }
-  return data;
+    .select('year, q1, q2, q3, q4')
+    .eq('year', year)
+    .maybeSingle();
+  if (error) { console.error('checkin_deadlines fetch failed:', error.message, error.details, error.hint); return {}; }
+  return data || {};
 }
 
 // "Projects (2+/yr)" has no dedicated table. This derives a per-chapter
@@ -84,8 +85,7 @@ function buildEnrichedChapters(chapters, profiles, checkins, projectLogs, deadli
     }
   });
 
-  var dueDateByQuarter = {};
-  deadlines.forEach(function (d) { dueDateByQuarter[d.quarter] = d.due_date; });
+  var dueDateByQuarter = { Q1: deadlines.q1, Q2: deadlines.q2, Q3: deadlines.q3, Q4: deadlines.q4 };
 
   // chapter_checkins.chapter_name is free text, not a foreign key to
   // chapters.id -- matched here by exact name. If real check-in data uses
@@ -138,8 +138,7 @@ function renderDeadlinesForm(deadlines, year) {
   var container = document.getElementById('checkin-deadlines-form');
   if (!container) { return; }
 
-  var dueDateByQuarter = {};
-  deadlines.forEach(function (d) { dueDateByQuarter[d.quarter] = d.due_date; });
+  var dueDateByQuarter = { Q1: deadlines.q1, Q2: deadlines.q2, Q3: deadlines.q3, Q4: deadlines.q4 };
 
   var html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">';
   QUARTERS.forEach(function (q) {
@@ -155,18 +154,15 @@ function renderDeadlinesForm(deadlines, year) {
 
 async function saveDeadlines(year) {
   var inputs = document.querySelectorAll('#checkin-deadlines-form [data-deadline-quarter]');
-  var rows = [];
+  var row = { year: year, updated_at: new Date().toISOString() };
   inputs.forEach(function (input) {
-    if (input.value) {
-      rows.push({ quarter: input.getAttribute('data-deadline-quarter'), year: year, due_date: input.value, updated_at: new Date().toISOString() });
-    }
+    var quarterKey = input.getAttribute('data-deadline-quarter').toLowerCase();
+    row[quarterKey] = input.value || null;
   });
-
-  if (rows.length === 0) { return; }
 
   var { error } = await supabase
     .from('checkin_deadlines')
-    .upsert(rows, { onConflict: 'quarter,year' });
+    .upsert([row], { onConflict: 'year' });
 
   var statusEl = document.getElementById('checkin-deadlines-save-status');
   if (error) {

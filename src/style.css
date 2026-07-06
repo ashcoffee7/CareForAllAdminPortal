@@ -189,6 +189,7 @@ html, body {
   transition: background 0.15s, color 0.15s;
 }
 .btn-outline:hover { background: var(--brand); color: white; }
+.btn-outline:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
 .btn-primary {
   padding: 9px 22px;

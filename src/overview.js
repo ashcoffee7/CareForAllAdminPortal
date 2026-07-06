@@ -201,6 +201,73 @@ function rankBadgeClass(rank) {
   return "rank-badge";
 }
 
+var individualsRanked = [];
+var individualsExpanded = false;
+var chaptersRanked = [];
+var chaptersExpanded = false;
+var LEADERBOARD_PREVIEW_SIZE = 6;
+
+function updateViewFullButton(buttonId, totalCount, expanded) {
+  var btn = document.getElementById(buttonId);
+  if (!btn) { return; }
+  btn.disabled = totalCount <= LEADERBOARD_PREVIEW_SIZE;
+  btn.textContent = expanded ? "Show Top " + LEADERBOARD_PREVIEW_SIZE : "View Full Leaderboard";
+}
+
+function paintIndividualsRows() {
+  var container = document.getElementById("leaderboard-individuals-rows");
+  if (!container) { return; }
+
+  var visible = individualsExpanded ? individualsRanked : individualsRanked.slice(0, LEADERBOARD_PREVIEW_SIZE);
+
+  var html = "";
+  visible.forEach(function (m, idx) {
+    var rank = idx + 1;
+    html += "<div class=\"leaderboard-row clickable-row\" data-name=\"" + escapeHtml(m.name.toLowerCase()) + "\">";
+    html += "<div class=\"" + rankBadgeClass(rank) + "\">" + rank + "</div>";
+    html += "<div><div class=\"leader-name\">" + escapeHtml(m.name) + "</div></div>";
+    html += "<div class=\"leader-meta\">" + escapeHtml(m.chapter) + "</div>";
+    html += "<div style=\"font-weight:700;color:var(--text)\">" + Math.round(m.hours) + " hrs</div>";
+    html += "</div>";
+  });
+
+  container.innerHTML = html;
+  updateViewFullButton("leaderboard-individuals-viewfull", individualsRanked.length, individualsExpanded);
+  filterLeaderboard();
+}
+
+function paintChaptersRows() {
+  var container = document.getElementById("leaderboard-groups-rows");
+  if (!container) { return; }
+
+  var visible = chaptersExpanded ? chaptersRanked : chaptersRanked.slice(0, LEADERBOARD_PREVIEW_SIZE);
+
+  var html = "";
+  visible.forEach(function (row, idx) {
+    var rank = idx + 1;
+    html += "<div class=\"leaderboard-row clickable-row\" data-name=\"" + escapeHtml(row.name.toLowerCase()) + "\">";
+    html += "<div class=\"" + rankBadgeClass(rank) + "\">" + rank + "</div>";
+    html += "<div><div class=\"leader-name\">" + escapeHtml(row.name) + "</div></div>";
+    html += "<div class=\"leader-meta\">" + row.type + "</div>";
+    html += "<div style=\"font-weight:700;color:var(--text)\">" + Math.round(row.hours) + " hrs</div>";
+    html += "</div>";
+  });
+
+  container.innerHTML = html;
+  updateViewFullButton("leaderboard-groups-viewfull", chaptersRanked.length, chaptersExpanded);
+  filterLeaderboard();
+}
+
+export function toggleIndividualsLeaderboard() {
+  individualsExpanded = !individualsExpanded;
+  paintIndividualsRows();
+}
+
+export function toggleChapterLeaderboard() {
+  chaptersExpanded = !chaptersExpanded;
+  paintChaptersRows();
+}
+
 export async function renderIndividualLeaderboard() {
   var container = document.getElementById("leaderboard-individuals-rows");
   if (!container) { return; }
@@ -255,20 +322,8 @@ export async function renderIndividualLeaderboard() {
     totals[key].hours += Number(row.hours) || 0;
   });
 
-  var ranked = Object.values(totals).sort(function (a, b) { return b.hours - a.hours; }).slice(0, 6);
-
-  var html = "";
-  ranked.forEach(function (m, idx) {
-    var rank = idx + 1;
-    html += "<div class=\"leaderboard-row clickable-row\" data-name=\"" + escapeHtml(m.name.toLowerCase()) + "\">";
-    html += "<div class=\"" + rankBadgeClass(rank) + "\">" + rank + "</div>";
-    html += "<div><div class=\"leader-name\">" + escapeHtml(m.name) + "</div></div>";
-    html += "<div class=\"leader-meta\">" + escapeHtml(m.chapter) + "</div>";
-    html += "<div style=\"font-weight:700;color:var(--text)\">" + Math.round(m.hours) + " hrs</div>";
-    html += "</div>";
-  });
-
-  container.innerHTML = html;
+  individualsRanked = Object.values(totals).sort(function (a, b) { return b.hours - a.hours; });
+  paintIndividualsRows();
 }
 
 export async function renderChapterLeaderboard() {
@@ -306,20 +361,8 @@ export async function renderChapterLeaderboard() {
     return { name: name, type: 'Chapter', hours: totals[name] };
   });
 
-  var combined = chapterRows.concat(staticPartners).sort(function (a, b) { return b.hours - a.hours; }).slice(0, 6);
-
-  var html = "";
-  combined.forEach(function (row, idx) {
-    var rank = idx + 1;
-    html += "<div class=\"leaderboard-row clickable-row\" data-name=\"" + escapeHtml(row.name.toLowerCase()) + "\">";
-    html += "<div class=\"" + rankBadgeClass(rank) + "\">" + rank + "</div>";
-    html += "<div><div class=\"leader-name\">" + escapeHtml(row.name) + "</div></div>";
-    html += "<div class=\"leader-meta\">" + row.type + "</div>";
-    html += "<div style=\"font-weight:700;color:var(--text)\">" + Math.round(row.hours) + " hrs</div>";
-    html += "</div>";
-  });
-
-  container.innerHTML = html;
+  chaptersRanked = chapterRows.concat(staticPartners).sort(function (a, b) { return b.hours - a.hours; });
+  paintChaptersRows();
 }
 
 export function switchLeaderboardView(name, el) {

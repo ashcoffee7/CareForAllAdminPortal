@@ -11,7 +11,9 @@ import {
   switchOverviewChartPeriod,
   switchOverviewChartRange,
   switchLeaderboardView,
-  filterLeaderboard
+  filterLeaderboard,
+  toggleIndividualsLeaderboard,
+  toggleChapterLeaderboard
 } from './overview.js';
 import {
   loadApprovalStats,
@@ -92,6 +94,12 @@ document.querySelectorAll('.segmented-option[data-leaderboard]').forEach(functio
 
 var leaderboardSearch = document.getElementById('leaderboard-search-input');
 if (leaderboardSearch) { leaderboardSearch.addEventListener('input', filterLeaderboard); }
+
+var leaderboardIndividualsViewFullBtn = document.getElementById('leaderboard-individuals-viewfull');
+if (leaderboardIndividualsViewFullBtn) { leaderboardIndividualsViewFullBtn.addEventListener('click', toggleIndividualsLeaderboard); }
+
+var leaderboardGroupsViewFullBtn = document.getElementById('leaderboard-groups-viewfull');
+if (leaderboardGroupsViewFullBtn) { leaderboardGroupsViewFullBtn.addEventListener('click', toggleChapterLeaderboard); }
 
 /* ---------- Approvals page interactions ---------- */
 document.querySelectorAll('.tab-bar .tab[data-approval-tab]').forEach(function (tab) {
