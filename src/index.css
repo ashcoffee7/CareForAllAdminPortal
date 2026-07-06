@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #245ec2;
+  --color-brand-dark: #1a4694;
+  --color-accent: #ff5961;
+  --color-accent-light: #7db9ff;
+  --color-sidebar: #14224a;
+  --color-bg: #f6f7f9;
+  --color-card: #ffffff;
+  --color-text: #1a1f36;
+  --color-muted: #6b7280;
+  --color-border: #e7e9ee;
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-success-dark: #065f46;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-warning-dark: #92400e;
+  --color-danger-light: #fee2e2;
+  --color-danger-dark: #991b1b;
+  --color-danger-border: #fca5a5;
+  --color-warning-border: #fde68a;
+  --color-hover-tint: #e8f0fd;
+  --color-intermediate-light: #ffe9ea;
+  --color-toggle-off: #d1d5db;
+  --color-rank-gold: #d4a017;
+  --color-rank-silver: #9aa3b2;
+  --color-rank-bronze: #b87333;
+
+  --font-heading: 'Anton', sans-serif;
+  --font-sans: 'Manrope', sans-serif;
+
+  /* Single existing responsive breakpoint (sidebar collapse etc.) — used via
+     the `max-portal:` variant since the current design is a max-width
+     mobile-collapse breakpoint, not Tailwind's default min-width scale. */
+  --breakpoint-portal: 800px;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#root {
+  height: 100%;
+}
