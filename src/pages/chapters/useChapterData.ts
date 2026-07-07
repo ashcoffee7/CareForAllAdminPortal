@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, apiOrToast } from '../../lib/apiClient';
+import { api, apiOrToast, mutateOrToast } from '../../lib/apiClient';
 import type { ChapterCheckin, CheckinDeadline } from '../../types/database';
 
 export type Quarter = 'Q1' | 'Q2' | 'Q3' | 'Q4';
@@ -12,6 +12,9 @@ export interface EnrichedChapter {
   lead: string;
   memberCount: number;
   projectCount: number;
+  // True when projectCount came from chapters.project_count_override
+  // (an admin correction) rather than the derived service_logs count.
+  projectCountIsOverride: boolean;
   quarterStatuses: QuarterStatus[];
   checkins: ChapterCheckin[];
   compliant: boolean;
@@ -23,9 +26,13 @@ interface EnrichedChaptersResponse {
   currentYear: number;
 }
 
+const MARKED_COMPLETE_NOTE = 'Marked complete by admin (no submission on file).';
+
 // The compliance derivation itself now lives server-side in
-// api/chapters/enriched.ts -- this hook just fetches the computed view for
-// the requested year.
+// api/_handlers/chapters.ts's enriched() -- this hook fetches the
+// computed view for the requested year and exposes the two admin actions
+// on top of it (project count override, mark/unmark a quarterly
+// check-in), reloading the computed view after each.
 export function useChapterData() {
   const currentYear = new Date().getFullYear();
   const [enriched, setEnriched] = useState<EnrichedChapter[]>([]);
@@ -48,5 +55,35 @@ export function useChapterData() {
     load();
   }, [load]);
 
-  return { enriched, deadlines, currentYear, loading, reload: load };
+  async function updateProjectCountOverride(chapterId: string, value: number | null) {
+    const ok = await mutateOrToast(
+      api.patch(`/chapters/${chapterId}`, { project_count_override: value }),
+      'Updating project count'
+    );
+    if (ok) { await load(); }
+  }
+
+  async function markQuarterComplete(chapterName: string, quarter: Quarter) {
+    const ok = await mutateOrToast(
+      api.post('/chapter-checkins', { chapter_name: chapterName, quarter, activities: MARKED_COMPLETE_NOTE }),
+      'Marking check-in complete'
+    );
+    if (ok) { await load(); }
+  }
+
+  async function unmarkQuarterComplete(checkinId: string) {
+    const ok = await mutateOrToast(api.delete(`/chapter-checkins/${checkinId}`), 'Removing check-in');
+    if (ok) { await load(); }
+  }
+
+  return {
+    enriched,
+    deadlines,
+    currentYear,
+    loading,
+    reload: load,
+    updateProjectCountOverride,
+    markQuarterComplete,
+    unmarkQuarterComplete,
+  };
 }

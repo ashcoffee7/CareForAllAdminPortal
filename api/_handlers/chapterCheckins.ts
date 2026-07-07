@@ -4,7 +4,12 @@ import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 
 const CHECKIN_COLUMNS = 'id, chapter_name, quarter, activities, member_count, challenges, submitted_at';
 
-export async function chapterCheckins(req: VercelRequest, res: VercelResponse, ctx: RequestContext) {
+export async function chapterCheckins(req: VercelRequest, res: VercelResponse, ctx: RequestContext, sub?: string) {
+  if (sub) { return byId(req, res, ctx, sub); }
+  return collection(req, res, ctx);
+}
+
+async function collection(req: VercelRequest, res: VercelResponse, ctx: RequestContext) {
   const { supabase } = ctx;
 
   if (req.method === 'GET') {
@@ -41,4 +46,20 @@ export async function chapterCheckins(req: VercelRequest, res: VercelResponse, c
   }
 
   methodNotAllowed(res, ['GET', 'POST']);
+}
+
+// DELETE /api/chapter-checkins/:id -- lets an admin undo a "mark quarter
+// complete" click (or remove a mistaken submission) from the Chapter
+// Annual Activity Compliance dashboard.
+async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext, id: string) {
+  const { supabase } = ctx;
+
+  if (req.method === 'DELETE') {
+    const { error } = await supabase.from('chapter_checkins').delete().eq('id', id);
+    if (error) { throw error; }
+    sendJson(res, 204, null);
+    return;
+  }
+
+  methodNotAllowed(res, ['DELETE']);
 }

@@ -10,7 +10,15 @@ import { ChapterComplianceTable } from './ChapterComplianceTable';
 import { ChapterDirectory } from './ChapterDirectory';
 
 export function ChaptersPage() {
-  const { enriched, deadlines, currentYear, reload } = useChapterData();
+  const {
+    enriched,
+    deadlines,
+    currentYear,
+    reload,
+    updateProjectCountOverride,
+    markQuarterComplete,
+    unmarkQuarterComplete,
+  } = useChapterData();
   const [search, setSearch] = useState('');
 
   const compliantCount = enriched.filter((c) => c.compliant).length;
@@ -42,7 +50,13 @@ export function ChaptersPage() {
         <div className="text-[12.5px] text-muted mb-[18px] leading-[1.5]">
           To remain an active chapter, a chapter must complete at least 2 projects per year and submit all 4 quarterly check-in forms. Non-compliant chapters are sorted to the top. Click a chapter's check-in dots to view its submitted responses.
         </div>
-        <ChapterComplianceTable chapters={enriched} />
+        <ChapterComplianceTable
+          chapters={enriched}
+          currentYear={currentYear}
+          onUpdateProjectCount={updateProjectCountOverride}
+          onMarkQuarterComplete={markQuarterComplete}
+          onUnmarkQuarterComplete={unmarkQuarterComplete}
+        />
         <Button variant="outline" className="w-full mt-[13px] !text-[12px] !px-2 !py-2">View All Chapters</Button>
       </Card>
 

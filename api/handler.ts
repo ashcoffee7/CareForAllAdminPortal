@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'chapters': return await chapters(req, res, ctx, sub);
       case 'profiles': return await profiles(req, res, ctx, sub);
       case 'service-logs': return await serviceLogs(req, res, ctx, sub);
-      case 'chapter-checkins': return await chapterCheckins(req, res, ctx);
+      case 'chapter-checkins': return await chapterCheckins(req, res, ctx, sub);
       case 'checkin-deadlines': return await checkinDeadlines(req, res, ctx);
       case 'mentors': return await mentors(req, res, ctx, sub);
       case 'mentorship-sessions': return await mentorshipSessions(req, res, ctx);
