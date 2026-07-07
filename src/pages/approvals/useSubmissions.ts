@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { collectUserIds, fetchProfilesByIds } from '../../lib/joinServiceLogsToProfiles';
+import { useServiceLogsRealtime } from '../../lib/useServiceLogsRealtime';
 import { resolveDisplay, type ProfileForDisplay } from './shared';
 
 export interface SubmissionRow {
@@ -45,6 +46,10 @@ export function useSubmissions(onMutated: () => void) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // New submissions land here from the member-facing app in real time, so
+  // the pending queue shouldn't need a manual refresh to show them.
+  useServiceLogsRealtime(load);
 
   async function updateSubmissionStatus(logId: string, newStatus: 'approved' | 'rejected') {
     const { data: userData } = await supabase.auth.getUser();
