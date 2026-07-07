@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { methodNotAllowed, sendJson } from '../_lib/http.js';
+import { collectUserIds, fetchProfilesByUserId } from '../_lib/joinProfiles.js';
 
 interface IndividualRow {
   name: string;
@@ -33,22 +34,28 @@ export async function leaderboard(req: VercelRequest, res: VercelResponse, ctx: 
 
 // Ranks members (and unattributed name-only entries, e.g. mentor
 // office-hours logged without a linked profile) by total approved hours.
+// service_logs.user_id has no direct FK to profiles (see
+// api/_lib/joinProfiles.ts), so the profile lookup is a second query
+// rather than a PostgREST embed.
 async function individuals(res: VercelResponse, ctx: RequestContext) {
   const { supabase } = ctx;
 
   const { data: logs, error } = await supabase
     .from('service_logs')
-    .select('hours, user_id, name, profiles:user_id ( first_name, last_name, role, chapters:chapter_id ( name ) )')
+    .select('hours, user_id, name')
     .eq('status', 'approved');
   if (error) { throw error; }
 
+  const rows = logs ?? [];
+  const profileById = await fetchProfilesByUserId(supabase, collectUserIds(rows));
+
   const totals: Record<string, IndividualRow> = {};
-  (logs ?? []).forEach((row) => {
+  rows.forEach((row) => {
     let key: string;
     let displayName: string;
     let chapter: string;
 
-    const profile = row.profiles;
+    const profile = row.user_id ? profileById[row.user_id] : undefined;
     if (row.user_id && profile) {
       key = row.user_id;
       displayName = ((profile.first_name || '') + ' ' + (profile.last_name || '')).trim();
@@ -73,13 +80,16 @@ async function chapters(res: VercelResponse, ctx: RequestContext) {
 
   const { data: logs, error } = await supabase
     .from('service_logs')
-    .select('hours, user_id, profiles:user_id ( chapters:chapter_id ( name ) )')
+    .select('hours, user_id')
     .eq('status', 'approved');
   if (error) { throw error; }
 
+  const rows = logs ?? [];
+  const profileById = await fetchProfilesByUserId(supabase, collectUserIds(rows));
+
   const totals: Record<string, number> = {};
-  (logs ?? []).forEach((row) => {
-    const name = row.profiles?.chapters?.name;
+  rows.forEach((row) => {
+    const name = row.user_id ? profileById[row.user_id]?.chapters?.name : undefined;
     if (!name) { return; }
     totals[name] = (totals[name] || 0) + (Number(row.hours) || 0);
   });

@@ -2,13 +2,18 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import { firstQueryValue, parsePageParams } from '../_lib/pagination.js';
+import { attachProfiles } from '../_lib/joinProfiles.js';
 
+// service_logs.user_id has a real FK to `users`, not `profiles` (profiles
+// happens to share the same id space via profiles.id -> users.id), so
+// there's no FK PostgREST can use to embed `profiles:user_id(...)`
+// directly here. See attachProfiles() -- it does the lookup as a second
+// query and stitches the same `profiles` shape onto each row.
 const LOG_COLUMNS = `
   id, user_id, name, org_name, activity_type, hours, status, description,
   submitted_at, reviewed_at, reviewed_by, verify_method, verification_completed,
   verification_completed_at, primary_impact, impact_magnitude, secondary_impact,
-  secondary_impact_magnitude,
-  profiles:user_id ( id, first_name, last_name, role, chapters:chapter_id ( name ) )
+  secondary_impact_magnitude
 `;
 
 // Handles /api/service-logs (list/create) and /api/service-logs/:id
@@ -53,13 +58,13 @@ async function collection(req: VercelRequest, res: VercelResponse, ctx: RequestC
       const { from, to, page, limit } = parsePageParams(req);
       const { data, error, count } = await query.range(from, to);
       if (error) { throw error; }
-      sendJson(res, 200, { data, page, limit, total: count ?? 0 });
+      sendJson(res, 200, { data: await attachProfiles(supabase, data ?? []), page, limit, total: count ?? 0 });
       return;
     }
 
     const { data, error, count } = await query;
     if (error) { throw error; }
-    sendJson(res, 200, { data, total: count ?? 0 });
+    sendJson(res, 200, { data: await attachProfiles(supabase, data ?? []), total: count ?? 0 });
     return;
   }
 
@@ -88,7 +93,8 @@ async function collection(req: VercelRequest, res: VercelResponse, ctx: RequestC
       .select(LOG_COLUMNS)
       .single();
     if (error) { throw error; }
-    sendJson(res, 201, { data });
+    const [withProfile] = await attachProfiles(supabase, [data]);
+    sendJson(res, 201, { data: withProfile });
     return;
   }
 
@@ -107,7 +113,8 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
   if (req.method === 'GET') {
     const { data, error } = await supabase.from('service_logs').select(LOG_COLUMNS).eq('id', id).single();
     if (error) { throw error; }
-    sendJson(res, 200, { data });
+    const [withProfile] = await attachProfiles(supabase, [data]);
+    sendJson(res, 200, { data: withProfile });
     return;
   }
 
@@ -137,7 +144,8 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
 
     const { data, error } = await supabase.from('service_logs').update(updates).eq('id', id).select(LOG_COLUMNS).single();
     if (error) { throw error; }
-    sendJson(res, 200, { data });
+    const [withProfile] = await attachProfiles(supabase, [data]);
+    sendJson(res, 200, { data: withProfile });
     return;
   }
 

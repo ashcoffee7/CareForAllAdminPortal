@@ -1,20 +1,21 @@
--- service_logs.user_id was assumed to have no foreign key to profiles
--- (see the old src/lib/joinServiceLogsToProfiles.ts, which did the join
--- as two client-side round trips instead). Turns out the constraint
--- already exists on the live database -- added outside any tracked
--- migration, likely via the Supabase Dashboard -- so this only needs to
--- add it if it's actually missing. Guarded the same way the realtime
--- migration guards `alter publication`, so this is safe to re-run.
+-- This migration is a deliberate no-op, kept for history rather than
+-- deleted since it already ran successfully.
 --
--- If the constraint is missing and this fails to add it, it means some
--- service_logs.user_id values don't match any profiles.id -- run this
--- first to find them:
+-- Original intent: add a service_logs.user_id -> profiles.id FK so
+-- PostgREST could embed profiles directly from service_logs. Turned out a
+-- constraint named `service_logs_user_id_fkey` already existed on the
+-- live database -- but pointing at `users`, not `profiles`
+-- (service_logs.user_id -> users.id; separately, profiles.id -> users.id
+-- too). Since constraint names are unique per table, this migration's
+-- `add constraint` was silently skipped by the guard below because a
+-- constraint with that name already existed, just referencing a
+-- different table than assumed.
 --
---   select id, user_id from public.service_logs
---   where user_id is not null
---     and user_id not in (select id from public.profiles);
---
--- and either null out or fix those rows before re-running this migration.
+-- There is no direct FK from service_logs to profiles, and none is
+-- needed: profiles can still be looked up from a service_logs row via
+-- `profiles.id = service_logs.user_id` (they share the same users.id
+-- space), just as a plain second query instead of a PostgREST embed --
+-- see api/_lib/joinProfiles.ts.
 do $$
 begin
   if not exists (

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { RequestContext } from '../_lib/auth.js';
 import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 import { firstQueryValue } from '../_lib/pagination.js';
+import { collectUserIds, fetchProfilesByUserId } from '../_lib/joinProfiles.js';
 
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'] as const;
 type Quarter = (typeof QUARTERS)[number];
@@ -88,7 +89,7 @@ async function enriched(req: VercelRequest, res: VercelResponse, ctx: RequestCon
     supabase.from('chapters').select('id, name, created_at').order('name'),
     supabase.from('profiles').select('id, first_name, last_name, chapter_id, role'),
     supabase.from('chapter_checkins').select('id, chapter_name, quarter, activities, member_count, challenges, submitted_at').order('submitted_at', { ascending: false }),
-    supabase.from('service_logs').select('user_id, activity_type, profiles:user_id ( chapter_id )').eq('status', 'approved').ilike('activity_type', '%project%'),
+    supabase.from('service_logs').select('user_id, activity_type').eq('status', 'approved').ilike('activity_type', '%project%'),
     supabase.from('checkin_deadlines').select('year, q1, q2, q3, q4').eq('year', currentYear).maybeSingle(),
   ]);
 
@@ -114,9 +115,13 @@ async function enriched(req: VercelRequest, res: VercelResponse, ctx: RequestCon
     }
   });
 
+  // service_logs.user_id has no direct FK to profiles (see
+  // api/_lib/joinProfiles.ts), so this is a second lookup rather than a
+  // PostgREST embed.
+  const projectProfileById = await fetchProfilesByUserId(supabase, collectUserIds(projectLogs));
   const projectCountByChapterId: Record<string, number> = {};
   projectLogs.forEach((log) => {
-    const chapterId = log.profiles?.chapter_id;
+    const chapterId = log.user_id ? projectProfileById[log.user_id]?.chapter_id : null;
     if (chapterId) { projectCountByChapterId[chapterId] = (projectCountByChapterId[chapterId] || 0) + 1; }
   });
 
