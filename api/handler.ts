@@ -1,17 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireUser } from './_lib/auth';
-import { sendError, sendJson } from './_lib/http';
-import { chapters } from './_handlers/chapters';
-import { profiles } from './_handlers/profiles';
-import { serviceLogs } from './_handlers/serviceLogs';
-import { chapterCheckins } from './_handlers/chapterCheckins';
-import { checkinDeadlines } from './_handlers/checkinDeadlines';
-import { mentors } from './_handlers/mentors';
-import { mentorshipSessions } from './_handlers/mentorshipSessions';
-import { overview } from './_handlers/overview';
-import { leaderboard } from './_handlers/leaderboard';
-import { impact } from './_handlers/impact';
-import { approvals } from './_handlers/approvals';
+import { requireUser } from './_lib/auth.js';
+import { sendError, sendJson } from './_lib/http.js';
+import { chapters } from './_handlers/chapters.js';
+import { profiles } from './_handlers/profiles.js';
+import { serviceLogs } from './_handlers/serviceLogs.js';
+import { chapterCheckins } from './_handlers/chapterCheckins.js';
+import { checkinDeadlines } from './_handlers/checkinDeadlines.js';
+import { mentors } from './_handlers/mentors.js';
+import { mentorshipSessions } from './_handlers/mentorshipSessions.js';
+import { overview } from './_handlers/overview.js';
+import { leaderboard } from './_handlers/leaderboard.js';
+import { impact } from './_handlers/impact.js';
+import { approvals } from './_handlers/approvals.js';
 
 // Single entry point for the entire API. Every file directly under /api
 // (one per resource/verb) counts as its own Vercel Serverless Function,

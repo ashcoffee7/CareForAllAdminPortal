@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { methodNotAllowed, sendJson } from '../_lib/http';
-import { firstQueryValue, parsePageParams } from '../_lib/pagination';
-import type { Database } from '../../src/types/database.generated';
+import type { RequestContext } from '../_lib/auth.js';
+import { methodNotAllowed, sendJson } from '../_lib/http.js';
+import { firstQueryValue, parsePageParams } from '../_lib/pagination.js';
+import type { Database } from '../../src/types/database.generated.js';
 
 const PROFILE_COLUMNS = 'id, first_name, last_name, role, gender, education_level, date_of_birth, chapter_id, created_at, chapters:chapter_id ( name )';
 

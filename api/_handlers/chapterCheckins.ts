@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { badRequest, methodNotAllowed, sendJson } from '../_lib/http';
+import type { RequestContext } from '../_lib/auth.js';
+import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
 
 const CHECKIN_COLUMNS = 'id, chapter_name, quarter, activities, member_count, challenges, submitted_at';
 

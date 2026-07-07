@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { badRequest, methodNotAllowed, sendJson } from '../_lib/http';
-import type { Database } from '../../src/types/database.generated';
+import type { RequestContext } from '../_lib/auth.js';
+import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
+import type { Database } from '../../src/types/database.generated.js';
 
 const MENTOR_COLUMNS = 'id, name, calendly_link, available';
 

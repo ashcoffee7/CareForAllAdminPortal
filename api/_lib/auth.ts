@@ -1,6 +1,6 @@
 import type { VercelRequest } from '@vercel/node';
 import type { User } from '@supabase/supabase-js';
-import { supabaseForToken } from './supabaseServer';
+import { supabaseForToken } from './supabaseServer.js';
 
 export class UnauthorizedError extends Error {}
 

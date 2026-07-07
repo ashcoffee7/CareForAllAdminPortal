@@ -1,5 +1,5 @@
 import type { VercelResponse } from '@vercel/node';
-import { UnauthorizedError } from './auth';
+import { UnauthorizedError } from './auth.js';
 
 export function sendJson(res: VercelResponse, status: number, body: unknown): void {
   res.status(status).json(body);

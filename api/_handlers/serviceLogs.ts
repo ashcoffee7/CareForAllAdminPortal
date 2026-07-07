@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { badRequest, methodNotAllowed, sendJson } from '../_lib/http';
-import { firstQueryValue, parsePageParams } from '../_lib/pagination';
+import type { RequestContext } from '../_lib/auth.js';
+import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
+import { firstQueryValue, parsePageParams } from '../_lib/pagination.js';
 
 const LOG_COLUMNS = `
   id, user_id, name, org_name, activity_type, hours, status, description,

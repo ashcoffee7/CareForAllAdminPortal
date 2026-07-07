@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { methodNotAllowed, sendJson } from '../_lib/http';
-import { MEMBER_ROLES } from '../../src/roles';
+import type { RequestContext } from '../_lib/auth.js';
+import { methodNotAllowed, sendJson } from '../_lib/http.js';
+import { MEMBER_ROLES } from '../../src/roles.js';
 
 export async function overview(req: VercelRequest, res: VercelResponse, ctx: RequestContext, sub?: string) {
   if (sub !== 'stats') {

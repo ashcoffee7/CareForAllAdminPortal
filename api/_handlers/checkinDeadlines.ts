@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { badRequest, methodNotAllowed, sendJson } from '../_lib/http';
-import { firstQueryValue } from '../_lib/pagination';
+import type { RequestContext } from '../_lib/auth.js';
+import { badRequest, methodNotAllowed, sendJson } from '../_lib/http.js';
+import { firstQueryValue } from '../_lib/pagination.js';
 
 const QUARTERS = ['q1', 'q2', 'q3', 'q4'] as const;
 

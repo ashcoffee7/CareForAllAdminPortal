@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { methodNotAllowed, sendJson } from '../_lib/http';
+import type { RequestContext } from '../_lib/auth.js';
+import { methodNotAllowed, sendJson } from '../_lib/http.js';
 
 // mentorship_sessions currently has no columns beyond `id` in any observed
 // call site -- this only ever reports a count today. Extend the select

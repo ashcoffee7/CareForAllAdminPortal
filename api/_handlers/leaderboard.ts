@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { RequestContext } from '../_lib/auth';
-import { methodNotAllowed, sendJson } from '../_lib/http';
+import type { RequestContext } from '../_lib/auth.js';
+import { methodNotAllowed, sendJson } from '../_lib/http.js';
 
 interface IndividualRow {
   name: string;
