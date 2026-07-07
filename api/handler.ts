@@ -13,21 +13,24 @@ import { leaderboard } from './_handlers/leaderboard';
 import { impact } from './_handlers/impact';
 import { approvals } from './_handlers/approvals';
 
-// Single catch-all entry point for the entire API. Every file directly
-// under /api (one per resource/verb) counts as its own Vercel Serverless
-// Function, and the Hobby plan caps a deployment at 12 -- this app has
-// more resources than that once you split list/create from get/patch/
-// delete. Routing everything through one function (with the actual logic
-// living in api/_handlers/*, which Vercel ignores for routing purposes
-// because of the leading underscore) keeps this at exactly 1 Function no
-// matter how many resources get added later.
+// Single entry point for the entire API. Every file directly under /api
+// (one per resource/verb) counts as its own Vercel Serverless Function,
+// and the Hobby plan caps a deployment at 12 -- this app has more
+// resources than that once you split list/create from get/patch/delete.
 //
-// URL shape is unchanged for the frontend: /api/chapters/enriched still
-// works the same as before, just dispatched here instead of by a
-// same-named file.
+// This used to be a bracket catch-all (api/[...route].ts), which turned
+// out not to reliably match multi-segment paths in Vercel's plain (non-
+// Next.js) function routing -- single-segment routes like
+// /api/service-logs worked, but two-segment ones like
+// /api/overview/stats 404'd. Instead, vercel.json explicitly rewrites
+// every /api/:path* request to /api/handler?path=:path*, so the sub-path
+// arrives as a plain, guaranteed-reliable query string rather than
+// depending on bracket-route matching. URL shape is unchanged for the
+// frontend -- /api/chapters/enriched still resolves the same way.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const raw = req.query.route;
-  const segments = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  const rawPath = req.query.path;
+  const pathString = Array.isArray(rawPath) ? rawPath.join('/') : rawPath ?? '';
+  const segments = pathString.split('/').filter(Boolean);
   const [resource, sub] = segments;
 
   try {
