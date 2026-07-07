@@ -22,3 +22,5 @@ export async function requireUser(req: VercelRequest) {
 
   return { user: data.user as User, supabase };
 }
+
+export type RequestContext = Awaited<ReturnType<typeof requireUser>>;
