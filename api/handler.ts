@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireUser } from './_lib/auth.js';
+import { requireAdmin, requireUser } from './_lib/auth.js';
 import { sendError, sendJson } from './_lib/http.js';
 import { chapters } from './_handlers/chapters.js';
 import { profiles } from './_handlers/profiles.js';
@@ -34,7 +34,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const [resource, sub] = segments;
 
   try {
-    const ctx = await requireUser(req);
+    // profiles/me is the one route any signed-in Supabase user can hit --
+    // the frontend needs it to find out whether the account is actually
+    // admin before rendering (or being allowed to load) anything else.
+    // Every other route requires an admin profiles.role.
+    if (resource === 'profiles' && sub === 'me') {
+      const ctx = await requireUser(req);
+      return await profiles(req, res, ctx, sub);
+    }
+
+    const ctx = await requireAdmin(req);
 
     switch (resource) {
       case 'chapters': return await chapters(req, res, ctx, sub);

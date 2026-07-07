@@ -1,13 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // protectedLoader signs a non-admin account back out and redirects here
+  // with ?denied=1 -- surface why they landed back on the login screen
+  // instead of leaving them to wonder if their password was wrong.
+  const [error, setError] = useState(() =>
+    searchParams.get('denied') ? 'This account does not have admin access.' : ''
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

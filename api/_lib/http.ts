@@ -1,5 +1,5 @@
 import type { VercelResponse } from '@vercel/node';
-import { UnauthorizedError } from './auth.js';
+import { ForbiddenError, UnauthorizedError } from './auth.js';
 
 export function sendJson(res: VercelResponse, status: number, body: unknown): void {
   res.status(status).json(body);
@@ -23,6 +23,10 @@ function extractMessage(err: unknown): string {
 export function sendError(res: VercelResponse, err: unknown): void {
   if (err instanceof UnauthorizedError) {
     sendJson(res, 401, { error: err.message });
+    return;
+  }
+  if (err instanceof ForbiddenError) {
+    sendJson(res, 403, { error: err.message });
     return;
   }
   console.error(err);
