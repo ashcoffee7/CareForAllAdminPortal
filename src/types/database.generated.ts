@@ -1,0 +1,245 @@
+// Hand-written bootstrap in the same shape `supabase gen types typescript`
+// produces, so the rest of the codebase can depend on `Database` today.
+// This file is meant to be OVERWRITTEN by running `npm run gen:types`
+// against the real, linked project (see that script in package.json) --
+// do it once `supabase link` has been run locally, then commit the diff.
+// Until then, this reflects the schema as observed from actual
+// .select()/.update()/.upsert() call sites across the app, including the
+// service_logs -> profiles foreign key added in
+// 20260706000002_service_logs_profiles_fk.sql.
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export interface Database {
+  public: {
+    Tables: {
+      chapters: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          role: string;
+          gender: string | null;
+          education_level: string | null;
+          date_of_birth: string | null;
+          chapter_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          role: string;
+          gender?: string | null;
+          education_level?: string | null;
+          date_of_birth?: string | null;
+          chapter_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          role?: string;
+          gender?: string | null;
+          education_level?: string | null;
+          date_of_birth?: string | null;
+          chapter_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_chapter_id_fkey';
+            columns: ['chapter_id'];
+            isOneToOne: false;
+            referencedRelation: 'chapters';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      chapter_checkins: {
+        Row: {
+          id: string;
+          chapter_name: string;
+          quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+          activities: string;
+          member_count: number | null;
+          challenges: string | null;
+          submitted_at: string;
+        };
+        Insert: {
+          id?: string;
+          chapter_name: string;
+          quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+          activities: string;
+          member_count?: number | null;
+          challenges?: string | null;
+          submitted_at?: string;
+        };
+        Update: {
+          id?: string;
+          chapter_name?: string;
+          quarter?: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+          activities?: string;
+          member_count?: number | null;
+          challenges?: string | null;
+          submitted_at?: string;
+        };
+        Relationships: [];
+      };
+      checkin_deadlines: {
+        Row: {
+          year: number;
+          q1: string | null;
+          q2: string | null;
+          q3: string | null;
+          q4: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          year: number;
+          q1?: string | null;
+          q2?: string | null;
+          q3?: string | null;
+          q4?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          year?: number;
+          q1?: string | null;
+          q2?: string | null;
+          q3?: string | null;
+          q4?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      service_logs: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          name: string | null;
+          org_name: string | null;
+          activity_type: string;
+          hours: number;
+          status: 'pending' | 'approved' | 'rejected';
+          description: string | null;
+          submitted_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          verify_method: string | null;
+          verification_completed: boolean;
+          verification_completed_at: string | null;
+          primary_impact: string | null;
+          impact_magnitude: number | null;
+          secondary_impact: string | null;
+          secondary_impact_magnitude: number | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          name?: string | null;
+          org_name?: string | null;
+          activity_type: string;
+          hours: number;
+          status?: 'pending' | 'approved' | 'rejected';
+          description?: string | null;
+          submitted_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          verify_method?: string | null;
+          verification_completed?: boolean;
+          verification_completed_at?: string | null;
+          primary_impact?: string | null;
+          impact_magnitude?: number | null;
+          secondary_impact?: string | null;
+          secondary_impact_magnitude?: number | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          name?: string | null;
+          org_name?: string | null;
+          activity_type?: string;
+          hours?: number;
+          status?: 'pending' | 'approved' | 'rejected';
+          description?: string | null;
+          submitted_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          verify_method?: string | null;
+          verification_completed?: boolean;
+          verification_completed_at?: string | null;
+          primary_impact?: string | null;
+          impact_magnitude?: number | null;
+          secondary_impact?: string | null;
+          secondary_impact_magnitude?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'service_logs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      mentors: {
+        Row: {
+          id: string;
+          name: string;
+          calendly_link: string | null;
+          available: boolean;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          calendly_link?: string | null;
+          available?: boolean;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          calendly_link?: string | null;
+          available?: boolean;
+        };
+        Relationships: [];
+      };
+      mentorship_sessions: {
+        Row: {
+          id: string;
+        };
+        Insert: {
+          id?: string;
+        };
+        Update: {
+          id?: string;
+        };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+}

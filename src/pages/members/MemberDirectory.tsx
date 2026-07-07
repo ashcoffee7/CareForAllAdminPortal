@@ -1,24 +1,18 @@
 import { formatDate } from '../../utils/formatDate';
-import type { MemberWithChapter } from './useMemberDirectory';
+import { Pagination } from '../../components/Pagination';
+import type { MemberDirectoryRow } from './useMemberDirectory';
 
 interface MemberDirectoryProps {
-  members: MemberWithChapter[];
-  searchQuery: string;
+  members: MemberDirectoryRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
 }
 
-export function MemberDirectory({ members, searchQuery }: MemberDirectoryProps) {
-  const sorted = [...members].sort((a, b) => {
-    const nameA = ((a.first_name || '') + ' ' + (a.last_name || '')).trim().toLowerCase();
-    const nameB = ((b.first_name || '') + ' ' + (b.last_name || '')).trim().toLowerCase();
-    return nameA.localeCompare(nameB);
-  });
-
-  const query = searchQuery.trim().toLowerCase();
-  const visible = sorted.filter((m) => {
-    const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim() || 'Unknown';
-    return name.toLowerCase().includes(query);
-  });
-
+// Sorting, searching, and pagination all happen server-side now (see
+// useMemberDirectory) -- this just renders whatever page it's given.
+export function MemberDirectory({ members, page, pageSize, total, onPageChange }: MemberDirectoryProps) {
   return (
     <>
       <div className="grid grid-cols-[2fr_1.5fr_1.5fr] gap-[10px] items-center py-3 border-b border-border [&>div]:text-[11px] [&>div]:font-bold [&>div]:text-muted [&>div]:uppercase [&>div]:tracking-[0.05em]">
@@ -28,7 +22,7 @@ export function MemberDirectory({ members, searchQuery }: MemberDirectoryProps) 
       </div>
 
       <div>
-        {visible.map((m) => {
+        {members.map((m) => {
           const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim() || 'Unknown';
           const chapter = m.chapters?.name || '-';
           return (
@@ -44,9 +38,11 @@ export function MemberDirectory({ members, searchQuery }: MemberDirectoryProps) 
         })}
       </div>
 
-      {visible.length === 0 ? (
+      {members.length === 0 ? (
         <div className="text-center py-5 text-muted text-[13px]">No matches found.</div>
-      ) : null}
+      ) : (
+        <Pagination page={page} pageSize={pageSize} total={total} onPageChange={onPageChange} />
+      )}
     </>
   );
 }

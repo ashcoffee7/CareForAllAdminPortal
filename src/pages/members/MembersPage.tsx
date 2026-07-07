@@ -3,25 +3,33 @@ import { Topbar } from '../../components/Topbar';
 import { Card } from '../../components/Card';
 import { StatCard } from '../../components/StatCard';
 import { SearchBar } from '../../components/SearchBar';
-import { useMemberDirectory } from './useMemberDirectory';
+import { useMemberAggregates } from './useMemberAggregates';
+import { useMemberDirectory, MEMBER_PAGE_SIZE } from './useMemberDirectory';
 import { computeGenderEntries, computeEducationEntries, computeAgeEntries } from './demographics';
 import { DemographicsBars } from './DemographicsBars';
 import { MemberDirectory } from './MemberDirectory';
 
 export function MembersPage() {
-  const { members, chapterCount } = useMemberDirectory();
+  const { members: allMembers, chapterCount } = useMemberAggregates();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const { members: pageMembers, total } = useMemberDirectory(search, page);
 
-  const genderEntries = computeGenderEntries(members);
-  const educationEntries = computeEducationEntries(members);
-  const { entries: ageEntries, withDobCount } = computeAgeEntries(members);
+  const genderEntries = computeGenderEntries(allMembers);
+  const educationEntries = computeEducationEntries(allMembers);
+  const { entries: ageEntries, withDobCount } = computeAgeEntries(allMembers);
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
 
   return (
     <>
       <Topbar title="Members & Demographics" />
 
       <div className="grid grid-cols-4 max-portal:grid-cols-2 gap-[14px]">
-        <StatCard label="Total Members" value={members.length} />
+        <StatCard label="Total Members" value={allMembers.length} />
         <StatCard label="Total Chapters" value={chapterCount ?? '—'} />
         <StatCard label="Total Countries" value="Not tracked" valueClassName="text-muted text-[16px]" />
         <StatCard label="Total States" value="Not tracked" valueClassName="text-muted text-[16px]" />
@@ -53,7 +61,7 @@ export function MembersPage() {
         <div className="text-[11.5px] text-muted mb-[10px]">Based on date of birth, where provided.</div>
         <DemographicsBars entries={ageEntries} />
         <div className="text-[11px] text-muted mt-2">
-          Based on {withDobCount} of {members.length} members with a birthdate on file.
+          Based on {withDobCount} of {allMembers.length} members with a birthdate on file.
         </div>
       </Card>
 
@@ -77,9 +85,9 @@ export function MembersPage() {
           <div className="text-[14px] font-bold text-text flex items-center gap-2">
             <i className="ti ti-list text-muted text-[17px]" /> All Members
           </div>
-          <SearchBar value={search} onChange={setSearch} placeholder="Search members..." className="w-[220px]" />
+          <SearchBar value={search} onChange={handleSearchChange} placeholder="Search members..." className="w-[220px]" />
         </div>
-        <MemberDirectory members={members} searchQuery={search} />
+        <MemberDirectory members={pageMembers} page={page} pageSize={MEMBER_PAGE_SIZE} total={total} onPageChange={setPage} />
       </Card>
     </>
   );

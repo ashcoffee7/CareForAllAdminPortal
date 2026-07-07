@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '../../components/Card';
 import { IconButton } from '../../components/IconButton';
 import { Modal } from '../../components/Modal';
+import { Pagination } from '../../components/Pagination';
 import { formatDate } from '../../utils/formatDate';
 import { formatHours } from '../../utils/formatHours';
 import { useSubmissions, type SubmissionRow } from './useSubmissions';
@@ -11,7 +12,7 @@ interface ProjectSubmissionsTabProps {
 }
 
 export function ProjectSubmissionsTab({ onMutated }: ProjectSubmissionsTabProps) {
-  const { submissions, updateSubmissionStatus } = useSubmissions(onMutated);
+  const { submissions, page, setPage, total, pageSize, updateSubmissionStatus } = useSubmissions(onMutated);
   const [previewRow, setPreviewRow] = useState<SubmissionRow | null>(null);
 
   return (
@@ -47,6 +48,10 @@ export function ProjectSubmissionsTab({ onMutated }: ProjectSubmissionsTabProps)
           </div>
         ))
       )}
+
+      {submissions.length > 0 ? (
+        <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
+      ) : null}
 
       <Modal open={previewRow !== null} onClose={() => setPreviewRow(null)} title="Submission Preview" subtitle={previewRow?.name ?? ''}>
         {previewRow ? (

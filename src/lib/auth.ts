@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { api, apiOrToast } from './apiClient';
 
 export interface CurrentAdmin {
   fullName: string;
@@ -6,9 +7,10 @@ export interface CurrentAdmin {
   role: string;
 }
 
-// Direct port of the old auth.js's loadCurrentAdmin() data-fetching half --
-// the DOM-writing half (sidebar/topbar textContent) is replaced by
-// AuthContext handing this back to React state instead.
+// supabase.auth.* stays a direct client call -- session/token management
+// is what the Supabase client is for. The profile lookup itself now goes
+// through the API (GET /api/profiles/me) instead of a direct
+// `.from('profiles')` query, like every other read in the app.
 export async function fetchCurrentAdminProfile(): Promise<CurrentAdmin | null> {
   let user;
   try {
@@ -22,17 +24,14 @@ export async function fetchCurrentAdminProfile(): Promise<CurrentAdmin | null> {
 
   if (!user) { return null; }
 
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('first_name, last_name, role')
-    .eq('id', user.id)
-    .single();
+  const result = await apiOrToast(
+    api.get<{ data: { first_name: string | null; last_name: string | null; role: string } }>('/profiles/me'),
+    'Loading your profile',
+    null
+  );
+  if (!result) { return null; }
 
-  if (error || !profile) {
-    console.error(error);
-    return null;
-  }
-
+  const profile = result.data;
   const fullName = ((profile.first_name || '') + ' ' + (profile.last_name || '')).trim();
   const initial = (profile.first_name || 'A').charAt(0).toUpperCase();
 

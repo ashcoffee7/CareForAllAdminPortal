@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api, mutateOrToast } from '../../lib/apiClient';
 import { Button } from '../../components/Button';
 import type { CheckinDeadline } from '../../types/database';
 
@@ -25,16 +25,11 @@ export function CheckinDeadlinesForm({ deadlines, year, onSaved }: CheckinDeadli
   }, [deadlines]);
 
   async function handleSave() {
-    const row: Record<string, unknown> = { year, updated_at: new Date().toISOString() };
+    const row: Record<string, unknown> = { year };
     QUARTERS.forEach((q) => { row[q.toLowerCase()] = values[q] || null; });
 
-    const { error } = await supabase.from('checkin_deadlines').upsert([row], { onConflict: 'year' });
-
-    if (error) {
-      console.error('checkin_deadlines save failed:', error.message, error.details, error.hint);
-      setStatus({ text: 'Could not save: ' + error.message, color: 'text-accent' });
-      return;
-    }
+    const ok = await mutateOrToast(api.put('/checkin-deadlines', row), 'Saving check-in deadlines');
+    if (!ok) { return; }
 
     setStatus({ text: 'Saved.', color: 'text-success' });
     setTimeout(() => setStatus({ text: '', color: 'text-success' }), 3000);
