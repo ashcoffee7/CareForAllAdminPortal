@@ -1,51 +1,55 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api, apiOrToast } from '../../lib/apiClient';
 import { MEMBER_ROLES } from '../../roles';
-import type { Profile } from '../../types/database';
 
-export type MemberWithChapter = Pick<
-  Profile,
-  'id' | 'first_name' | 'last_name' | 'gender' | 'education_level' | 'date_of_birth' | 'chapter_id' | 'created_at'
-> & { chapters: { name: string } | null };
-
-interface MembersState {
-  members: MemberWithChapter[];
-  chapterCount: number | null;
-  loading: boolean;
+export interface MemberDirectoryRow {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string;
+  chapters: { name: string } | null;
 }
 
-export function useMemberDirectory() {
-  const [state, setState] = useState<MembersState>({ members: [], chapterCount: null, loading: true });
+export const MEMBER_PAGE_SIZE = 25;
+
+// Server-side paginated + searched "All Members" table. Separate from
+// useMemberAggregates, which needs every matching member for the
+// demographics percentages -- this hook only ever holds one page in
+// memory, with the search term applied as a `q` ilike filter on the API
+// side rather than a client-side .filter() over an already-fetched array.
+export function useMemberDirectory(search: string, page: number) {
+  const [members, setMembers] = useState<MemberDirectoryRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
 
     (async () => {
-      const { count: chapterCount, error: chapterErr } = await supabase
-        .from('chapters')
-        .select('*', { count: 'exact', head: true });
-      if (chapterErr) { console.error('chapters count failed:', chapterErr.message, chapterErr.details, chapterErr.hint); }
+      const params = new URLSearchParams({
+        role: MEMBER_ROLES.join(','),
+        page: String(page),
+        limit: String(MEMBER_PAGE_SIZE),
+      });
+      const trimmed = search.trim();
+      if (trimmed) { params.set('q', trimmed); }
 
-      const { data: members, error: membersErr } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, gender, education_level, date_of_birth, chapter_id, created_at, chapters:chapter_id ( name )')
-        .in('role', MEMBER_ROLES);
-
-      if (membersErr) {
-        console.error('members fetch failed:', membersErr.message, membersErr.details, membersErr.hint);
-      }
+      const result = await apiOrToast(
+        api.get<{ data: MemberDirectoryRow[]; total: number }>(`/profiles?${params.toString()}`),
+        'Loading members',
+        { data: [], total: 0 }
+      );
 
       if (!cancelled) {
-        setState({
-          members: membersErr ? [] : (members as unknown as MemberWithChapter[] ?? []),
-          chapterCount: chapterCount ?? null,
-          loading: false,
-        });
+        setMembers(result.data);
+        setTotal(result.total);
+        setLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, []);
+  }, [search, page]);
 
-  return state;
+  return { members, total, loading };
 }

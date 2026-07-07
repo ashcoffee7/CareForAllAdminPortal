@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api, apiOrToast, mutateOrToast } from '../../lib/apiClient';
 import type { Mentor } from '../../types/database';
 
 interface MentorshipState {
@@ -15,25 +15,13 @@ export function useMentors() {
     let cancelled = false;
 
     (async () => {
-      const { data: mentors, error: mentorsErr } = await supabase
-        .from('mentors')
-        .select('id, name, calendly_link, available')
-        .order('name');
-
-      if (mentorsErr) {
-        console.error('mentors fetch failed:', mentorsErr.message, mentorsErr.details, mentorsErr.hint);
-      }
-
-      const { count: sessionCount, error: sessionsErr } = await supabase
-        .from('mentorship_sessions')
-        .select('*', { count: 'exact', head: true });
-
-      if (sessionsErr) {
-        console.error('mentorship_sessions fetch failed:', sessionsErr.message, sessionsErr.details, sessionsErr.hint);
-      }
+      const [mentorsResult, sessionsResult] = await Promise.all([
+        apiOrToast(api.get<{ data: Mentor[] }>('/mentors'), 'Loading mentors', { data: [] }),
+        apiOrToast(api.get<{ total: number }>('/mentorship-sessions'), 'Loading session count', { total: 0 }),
+      ]);
 
       if (!cancelled) {
-        setState({ mentors: mentorsErr ? [] : (mentors ?? []), sessionCount: sessionCount ?? null, loading: false });
+        setState({ mentors: mentorsResult.data, sessionCount: sessionsResult.total, loading: false });
       }
     })();
 
@@ -41,13 +29,8 @@ export function useMentors() {
   }, []);
 
   async function setMentorAvailability(mentorId: string, available: boolean) {
-    const { error } = await supabase.from('mentors').update({ available }).eq('id', mentorId);
-
-    if (error) {
-      console.error('mentor availability update failed:', error.message, error.details, error.hint);
-      alert('Could not update mentor availability:\n' + error.message);
-      return;
-    }
+    const ok = await mutateOrToast(api.patch(`/mentors/${mentorId}`, { available }), 'Updating mentor availability');
+    if (!ok) { return; }
 
     setState((prev) => ({
       ...prev,

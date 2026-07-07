@@ -1,4 +1,4 @@
-import type { MemberWithChapter } from './useMemberDirectory';
+import type { MemberAggregateRow } from './useMemberAggregates';
 
 export interface DemoBarEntry {
   label: string;
@@ -24,7 +24,7 @@ function ageBucket(age: number): string {
   return '19+';
 }
 
-export function computeGenderEntries(members: MemberWithChapter[]): DemoBarEntry[] {
+export function computeGenderEntries(members: MemberAggregateRow[]): DemoBarEntry[] {
   const tally: Record<string, number> = { Male: 0, Female: 0, Nonbinary: 0, Undisclosed: 0 };
   members.forEach((m) => {
     const key = m.gender && Object.prototype.hasOwnProperty.call(tally, m.gender) ? m.gender : 'Undisclosed';
@@ -41,7 +41,7 @@ export function computeGenderEntries(members: MemberWithChapter[]): DemoBarEntry
     .sort((a, b) => b.count - a.count);
 }
 
-export function computeEducationEntries(members: MemberWithChapter[]): DemoBarEntry[] {
+export function computeEducationEntries(members: MemberAggregateRow[]): DemoBarEntry[] {
   const tally: Record<string, number> = {};
   members.forEach((m) => {
     const key = m.education_level || 'Not specified';
@@ -58,7 +58,7 @@ export function computeEducationEntries(members: MemberWithChapter[]): DemoBarEn
     .sort((a, b) => b.count - a.count);
 }
 
-export function computeAgeEntries(members: MemberWithChapter[]): { entries: DemoBarEntry[]; withDobCount: number } {
+export function computeAgeEntries(members: MemberAggregateRow[]): { entries: DemoBarEntry[]; withDobCount: number } {
   const withDob = members.filter((m) => !!m.date_of_birth);
   const buckets: Record<string, number> = { '13-14': 0, '15-16': 0, '17-18': 0, '19+': 0 };
 

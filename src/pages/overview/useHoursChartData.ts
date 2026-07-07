@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api, apiOrToast } from '../../lib/apiClient';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEK_LABELS = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
@@ -7,15 +7,12 @@ const WEEK_LABELS = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
 async function fetchApprovedLogsForYear(year: number): Promise<{ submitted_at: string }[]> {
   const start = `${year}-01-01`;
   const end = `${year + 1}-01-01`;
-  const { data, error } = await supabase
-    .from('service_logs')
-    .select('submitted_at, activity_type')
-    .eq('status', 'approved')
-    .gte('submitted_at', start)
-    .lt('submitted_at', end);
-
-  if (error) { console.error(error); return []; }
-  return data;
+  const result = await apiOrToast(
+    api.get<{ data: { submitted_at: string }[] }>(`/service-logs?status=approved&submittedAfter=${start}&submittedBefore=${end}`),
+    'Loading hours chart',
+    { data: [] }
+  );
+  return result.data;
 }
 
 function monthlyCountsFromLogs(logs: { submitted_at: string }[]): number[] {

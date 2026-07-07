@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { api, apiOrToast } from '../../lib/apiClient';
 import { Card } from '../../components/Card';
 import { PieChart, type PieSlice } from '../../charts/PieChart';
 
@@ -23,11 +23,14 @@ export function HoursPieChart() {
     let cancelled = false;
 
     (async () => {
-      const { data, error } = await supabase.from('service_logs').select('activity_type').eq('status', 'approved');
-      if (error) { console.error(error); return; }
+      const result = await apiOrToast(
+        api.get<{ data: { activity_type: string }[] }>('/service-logs?status=approved'),
+        'Loading activity breakdown',
+        { data: [] }
+      );
 
       const tally: Record<string, number> = {};
-      data.forEach((row) => {
+      result.data.forEach((row) => {
         const key = row.activity_type || 'Other';
         tally[key] = (tally[key] || 0) + 1;
       });

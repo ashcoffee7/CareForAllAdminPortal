@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { collectUserIds, fetchProfilesByIds } from '../../lib/joinServiceLogsToProfiles';
+import { api, apiOrToast, mutateOrToast } from '../../lib/apiClient';
 import { useServiceLogsRealtime } from '../../lib/useServiceLogsRealtime';
-import { resolveDisplay, type ProfileForDisplay } from './shared';
+import { resolveDisplay, type EmbeddedProfile } from './shared';
 
 export interface SubmissionRow {
   id: string;
@@ -17,33 +16,49 @@ export interface SubmissionRow {
   displayChapter: string;
 }
 
+interface ServiceLogApiRow {
+  id: string;
+  user_id: string | null;
+  name: string | null;
+  org_name: string | null;
+  activity_type: string;
+  hours: number;
+  submitted_at: string;
+  description: string | null;
+  profiles: EmbeddedProfile | null;
+}
+
+export const SUBMISSIONS_PAGE_SIZE = 20;
+
 export function useSubmissions(onMutated: () => void) {
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const load = useCallback(async () => {
-    const { data: logs, error } = await supabase
-      .from('service_logs')
-      .select('id, user_id, name, org_name, activity_type, hours, submitted_at, description')
-      .eq('status', 'pending')
-      .order('submitted_at', { ascending: false });
+    setLoading(true);
+    const result = await apiOrToast(
+      api.get<{ data: ServiceLogApiRow[]; total: number }>(
+        `/service-logs?status=pending&page=${page}&limit=${SUBMISSIONS_PAGE_SIZE}`
+      ),
+      'Loading submissions',
+      { data: [], total: 0 }
+    );
 
-    if (error) {
-      console.error('submissions fetch failed:', error.message, error.details, error.hint);
-      setSubmissions([]);
-      setLoading(false);
-      return;
-    }
-
-    const userIds = collectUserIds(logs);
-    const profileById = await fetchProfilesByIds<ProfileForDisplay>(userIds, 'id, first_name, last_name, chapters:chapter_id ( name )');
-
-    setSubmissions(logs.map((row) => {
-      const display = resolveDisplay(row, profileById);
+    setTotal(result.total);
+    setSubmissions(result.data.map((row) => {
+      const display = resolveDisplay(row);
       return { ...row, displayName: display.name, displayChapter: display.chapter };
     }));
     setLoading(false);
-  }, []);
+
+    // If an approve/reject emptied the last item on a page past the
+    // first, drop back a page instead of showing a dead-end empty page.
+    if (result.data.length === 0 && page > 1) {
+      setPage((p) => Math.max(1, p - 1));
+    }
+  }, [page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -52,23 +67,12 @@ export function useSubmissions(onMutated: () => void) {
   useServiceLogsRealtime(load);
 
   async function updateSubmissionStatus(logId: string, newStatus: 'approved' | 'rejected') {
-    const { data: userData } = await supabase.auth.getUser();
-    const reviewerId = userData?.user?.id ?? null;
-
-    const { error } = await supabase
-      .from('service_logs')
-      .update({ status: newStatus, reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
-      .eq('id', logId);
-
-    if (error) {
-      console.error('status update failed:', error.message, error.details, error.hint);
-      alert('Could not update this submission:\n' + error.message);
-      return;
-    }
+    const ok = await mutateOrToast(api.patch(`/service-logs/${logId}`, { status: newStatus }), 'Updating submission');
+    if (!ok) { return; }
 
     await load();
     onMutated();
   }
 
-  return { submissions, loading, updateSubmissionStatus };
+  return { submissions, loading, page, setPage, total, pageSize: SUBMISSIONS_PAGE_SIZE, updateSubmissionStatus };
 }
