@@ -56,7 +56,7 @@ export function OverviewPage() {
         <SearchBar value={search} onChange={setSearch} placeholder="Search leaderboard by name..." className="mb-[14px]" />
 
         <LeaderboardList
-          rows={individuals.map((r) => ({ name: r.name, meta: r.chapter, hours: r.hours }))}
+          rows={individuals.map((r) => ({ name: r.name, meta: r.chapter, hours: r.hours, id: r.userId }))}
           searchQuery={search}
           nameColumnLabel="Member"
           metaColumnLabel="Chapter"
