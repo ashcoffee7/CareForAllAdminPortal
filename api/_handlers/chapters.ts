@@ -49,10 +49,26 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
   }
 
   if (req.method === 'PATCH') {
-    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : undefined;
-    if (name === undefined) { badRequest(res, 'name is required'); return; }
+    const updates: { name?: string; project_count_override?: number | null } = {};
 
-    const { data, error } = await supabase.from('chapters').update({ name }).eq('id', id).select().single();
+    if (req.body?.name !== undefined) {
+      const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+      if (!name) { badRequest(res, 'name must be a non-empty string'); return; }
+      updates.name = name;
+    }
+
+    if (req.body?.project_count_override !== undefined) {
+      const override = req.body.project_count_override;
+      if (override !== null && (typeof override !== 'number' || !Number.isFinite(override) || override < 0)) {
+        badRequest(res, 'project_count_override must be a non-negative number or null');
+        return;
+      }
+      updates.project_count_override = override;
+    }
+
+    if (Object.keys(updates).length === 0) { badRequest(res, 'name or project_count_override is required'); return; }
+
+    const { data, error } = await supabase.from('chapters').update(updates).eq('id', id).select().single();
     if (error) { throw error; }
     sendJson(res, 200, { data });
     return;
@@ -86,7 +102,7 @@ async function enriched(req: VercelRequest, res: VercelResponse, ctx: RequestCon
   const currentYear = yearParam ? Number(yearParam) : new Date().getFullYear();
 
   const [chaptersRes, profilesRes, checkinsRes, projectLogsRes, deadlinesRes] = await Promise.all([
-    supabase.from('chapters').select('id, name, created_at').order('name'),
+    supabase.from('chapters').select('id, name, created_at, project_count_override').order('name'),
     supabase.from('profiles').select('id, first_name, last_name, chapter_id, role'),
     supabase.from('chapter_checkins').select('id, chapter_name, quarter, activities, member_count, challenges, submitted_at').order('submitted_at', { ascending: false }),
     supabase.from('service_logs').select('user_id, activity_type').eq('status', 'approved').ilike('activity_type', '%project%'),
@@ -153,7 +169,8 @@ async function enriched(req: VercelRequest, res: VercelResponse, ctx: RequestCon
     });
 
     const allCheckinsIn = quarterStatuses.every((s) => s === 'done');
-    const projectCount = projectCountByChapterId[ch.id] || 0;
+    const derivedProjectCount = projectCountByChapterId[ch.id] || 0;
+    const projectCount = ch.project_count_override ?? derivedProjectCount;
 
     return {
       id: ch.id,
@@ -162,6 +179,7 @@ async function enriched(req: VercelRequest, res: VercelResponse, ctx: RequestCon
       lead: leadByChapterId[ch.id] || '-',
       memberCount: memberCountByChapterId[ch.id] || 0,
       projectCount,
+      projectCountOverride: ch.project_count_override,
       quarterStatuses,
       checkins: chapterCheckins,
       compliant: projectCount >= 2 && allCheckinsIn,

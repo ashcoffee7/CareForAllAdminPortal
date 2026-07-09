@@ -10,7 +10,7 @@ import { ChapterComplianceTable } from './ChapterComplianceTable';
 import { ChapterDirectory } from './ChapterDirectory';
 
 export function ChaptersPage() {
-  const { enriched, deadlines, currentYear, reload, markQuarterComplete, unmarkQuarterComplete } = useChapterData();
+  const { enriched, deadlines, currentYear, reload, markQuarterComplete, unmarkQuarterComplete, setProjectCountOverride } = useChapterData();
   const [search, setSearch] = useState('');
 
   const compliantCount = enriched.filter((c) => c.compliant).length;
@@ -47,6 +47,7 @@ export function ChaptersPage() {
           currentYear={currentYear}
           onMarkQuarterComplete={markQuarterComplete}
           onUnmarkQuarterComplete={unmarkQuarterComplete}
+          onSetProjectCount={setProjectCountOverride}
         />
         <Button variant="outline" className="w-full mt-[13px] !text-[12px] !px-2 !py-2">View All Chapters</Button>
       </Card>

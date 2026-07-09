@@ -12,6 +12,7 @@ export interface EnrichedChapter {
   lead: string;
   memberCount: number;
   projectCount: number;
+  projectCountOverride: number | null;
   quarterStatuses: QuarterStatus[];
   checkins: ChapterCheckin[];
   compliant: boolean;
@@ -65,6 +66,14 @@ export function useChapterData() {
     if (ok) { await load(); }
   }
 
+  async function setProjectCountOverride(chapterId: string, value: number | null) {
+    const ok = await mutateOrToast(
+      api.patch(`/chapters/${chapterId}`, { project_count_override: value }),
+      'Updating project count'
+    );
+    if (ok) { await load(); }
+  }
+
   return {
     enriched,
     deadlines,
@@ -73,5 +82,6 @@ export function useChapterData() {
     reload: load,
     markQuarterComplete,
     unmarkQuarterComplete,
+    setProjectCountOverride,
   };
 }

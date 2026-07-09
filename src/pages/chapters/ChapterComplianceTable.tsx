@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { StatusPill } from '../../components/StatusPill';
 import { Button } from '../../components/Button';
@@ -10,6 +10,7 @@ interface ChapterComplianceTableProps {
   currentYear: number;
   onMarkQuarterComplete: (chapterName: string, quarter: Quarter) => void;
   onUnmarkQuarterComplete: (checkinId: string) => void;
+  onSetProjectCount: (chapterId: string, value: number | null) => void;
 }
 
 const QUARTERS: Quarter[] = ['Q1', 'Q2', 'Q3', 'Q4'];
@@ -31,11 +32,17 @@ export function ChapterComplianceTable({
   currentYear,
   onMarkQuarterComplete,
   onUnmarkQuarterComplete,
+  onSetProjectCount,
 }: ChapterComplianceTableProps) {
   const [openChapterId, setOpenChapterId] = useState<string | null>(null);
+  const [projectCountInput, setProjectCountInput] = useState('');
 
   const sorted = [...chapters].sort((a, b) => (a.compliant ? 1 : 0) - (b.compliant ? 1 : 0));
   const openChapter = chapters.find((c) => c.id === openChapterId) ?? null;
+
+  useEffect(() => {
+    if (openChapter) { setProjectCountInput(String(openChapter.projectCount)); }
+  }, [openChapter?.id]);
 
   return (
     <>
@@ -53,7 +60,10 @@ export function ChapterComplianceTable({
             <div className="text-[13px] font-semibold text-text">{ch.name}</div>
             <div className="text-[11.5px] text-muted">{ch.lead}</div>
 
-            <div className="inline-flex items-center gap-[7px] text-[12px] font-semibold text-text">
+            <div
+              onClick={() => setOpenChapterId(ch.id)}
+              className="inline-flex items-center gap-[7px] text-[12px] font-semibold text-text cursor-pointer hover:opacity-80"
+            >
               <span className={`w-[10px] h-[10px] rounded-full shrink-0 ${ch.projectCount >= 2 ? 'bg-success' : 'bg-accent'}`} />
               {ch.projectCount} / 2
             </div>
@@ -84,6 +94,43 @@ export function ChapterComplianceTable({
         title="Quarterly Check-In Responses"
         subtitle={openChapter?.name}
       >
+        {openChapter ? (
+          <div className="py-[11px] border-b border-border flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10.5px] font-bold text-muted uppercase tracking-[0.06em]">Project Count</div>
+              <div className="text-[11px] text-muted mt-1">
+                Completed projects this year (2+ required for compliance)
+                {openChapter.projectCountOverride != null ? ' — manually set' : ''}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={projectCountInput}
+                onChange={(e) => setProjectCountInput(e.target.value)}
+                className="w-16 rounded-md border border-border px-2 py-[5px] text-[13px] text-text"
+              />
+              <Button
+                variant="outline"
+                className="!text-[11px] !px-3 !py-[5px]"
+                onClick={() => onSetProjectCount(openChapter.id, Number(projectCountInput))}
+              >
+                Save
+              </Button>
+              {openChapter.projectCountOverride != null ? (
+                <Button
+                  variant="danger"
+                  className="!text-[11px] !px-3 !py-[5px]"
+                  onClick={() => onSetProjectCount(openChapter.id, null)}
+                >
+                  Reset
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {openChapter
           ? QUARTERS.map((q) => {
               const submitted = openChapter.checkins.find(
