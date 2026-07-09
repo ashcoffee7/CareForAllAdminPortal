@@ -277,6 +277,45 @@ export interface Database {
           },
         ];
       };
+      resources: {
+        Row: {
+          id: string;
+          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other';
+          title: string;
+          description: string | null;
+          link: string | null;
+          source_type: string | null;
+          duration: string | null;
+          audience: string | null;
+          status: 'published' | 'coming-soon';
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          category: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other';
+          title: string;
+          description?: string | null;
+          link?: string | null;
+          source_type?: string | null;
+          duration?: string | null;
+          audience?: string | null;
+          status?: 'published' | 'coming-soon';
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          category?: 'Handbooks' | 'Toolkits' | 'Videos' | 'Other';
+          title?: string;
+          description?: string | null;
+          link?: string | null;
+          source_type?: string | null;
+          duration?: string | null;
+          audience?: string | null;
+          status?: 'published' | 'coming-soon';
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       mentors: {
         Row: {
           id: string;

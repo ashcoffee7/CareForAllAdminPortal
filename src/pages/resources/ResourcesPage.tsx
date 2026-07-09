@@ -1,46 +1,17 @@
+import { useState } from 'react';
 import { Topbar } from '../../components/Topbar';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { formatDate } from '../../utils/formatDate';
+import { useResources, type ResourceGroups } from './useResources';
+import { ResourcePreviewModal } from './ResourcePreviewModal';
+import { ResourceEditModal } from './ResourceEditModal';
+import { AddResourceModal } from './AddResourceModal';
+import type { Resource } from '../../types/database';
 
-// This whole page is a direct JSX transcription of the old static markup --
-// there is no `resources` table in the schema and no click handlers were
-// ever wired to these buttons in the vanilla app (confirmed: main.js has a
-// TODO explicitly noting Resources Manager has no Supabase wiring). Do not
-// add data-fetching or onClick behavior here; that would be new scope.
-
-interface ResourceItem {
-  title: string;
-  desc: string;
-  meta: string[];
-  status: 'published' | 'coming-soon';
-}
-
-const HANDBOOKS: ResourceItem[] = [
-  { title: 'Program Handbook', desc: 'Everything a new member needs to get started with CareForAll.', meta: ['Google Doc', 'All Members', 'Updated May 1, 2026'], status: 'published' },
-  { title: 'Chapter Handbook', desc: 'Guide for running and growing a CareForAll chapter.', meta: ['Google Doc', 'Chapter Leads', 'Updated Apr 12, 2026'], status: 'published' },
-  { title: 'Education Handbook', desc: 'How to design and lead peer education sessions.', meta: ['Google Slides', 'All Members', 'Updated Mar 20, 2026'], status: 'published' },
-  { title: 'Fundraising Handbook', desc: 'Fundraising playbooks and templates — in progress.', meta: ['Google Doc', 'All Members', 'Updated —'], status: 'coming-soon' },
-  { title: 'Mapping for Beginners', desc: 'LearnOSM intro to humanitarian mapping.', meta: ['External Link', 'All Members', 'Updated May 9, 2026'], status: 'published' },
-];
-
-const TOOLKITS: ResourceItem[] = [
-  { title: 'Advocacy Toolkit', desc: 'Letter templates, infographics, and petition guides.', meta: ['Google Doc', 'All Members', 'Updated Feb 8, 2026'], status: 'published' },
-  { title: 'Health Essentials Toolkit', desc: 'Run health drives, screenings, and hygiene-kit collections.', meta: ['Google Doc', 'All Members', 'Updated Mar 2, 2026'], status: 'published' },
-  { title: 'Education Toolkit', desc: 'Workshop plans and credible health-topic sources.', meta: ['Google Doc', 'All Members', 'Updated Mar 15, 2026'], status: 'published' },
-  { title: 'Create Your Own Toolkit', desc: 'Blank template to build a custom project toolkit.', meta: ['Template', 'Chapter Leads', 'Updated Apr 1, 2026'], status: 'published' },
-];
-
-const VIDEOS: ResourceItem[] = [
-  { title: 'Getting Started with Mapping', desc: 'A quick intro for brand-new mappers.', meta: ['Video', '1 min', 'All Members', 'Updated May 5, 2026'], status: 'published' },
-  { title: 'Using the HOTOSM Tasking Manager', desc: 'Claim a task and start mapping in the Tasking Manager.', meta: ['Video', '3 min', 'All Members', 'Updated May 5, 2026'], status: 'published' },
-  { title: 'Tagging Health Facilities', desc: 'How to correctly tag clinics and hospitals.', meta: ['Video', '2 min', 'All Members', 'Updated May 5, 2026'], status: 'published' },
-  { title: 'Reviewing & Validating Data', desc: 'Validate contributions before they are submitted.', meta: ['Video', '2 min', 'Chapter Leads', 'Updated May 5, 2026'], status: 'published' },
-];
-
-const OTHER: ResourceItem[] = [
-  { title: 'CareForAll Creator Kit', desc: 'Social-media templates, logos, and brand assets.', meta: ['External Link', 'All Members', 'Updated Apr 22, 2026'], status: 'published' },
-  { title: 'Onboarding Videos', desc: 'Full onboarding video series — coming soon.', meta: ['Video', 'All Members', 'Updated —'], status: 'coming-soon' },
-];
+// The Mapping Project Directory section below is unrelated to Resources
+// (drives the member-facing Mapping page, not the resource library) --
+// still static mock, left untouched intentionally.
 
 interface MappingProject {
   title: string;
@@ -72,56 +43,99 @@ const DIFF_BADGE: Record<MappingProject['difficulty'], string> = {
   advanced: 'bg-sidebar text-white',
 };
 
-function ResourceSection({ icon, title, items }: { icon: string; title: string; items: ResourceItem[] }) {
+function metaFor(item: Resource): string[] {
+  const meta: string[] = [];
+  if (item.source_type) { meta.push(item.source_type); }
+  if (item.category === 'Videos' && item.duration) { meta.push(item.duration); }
+  if (item.audience) { meta.push(item.audience); }
+  meta.push(`Updated ${formatDate(item.updated_at, '—')}`);
+  return meta;
+}
+
+interface ResourceSectionProps {
+  icon: string;
+  title: string;
+  items: Resource[];
+  onPreview: (item: Resource) => void;
+  onEdit: (item: Resource) => void;
+  onHide: (item: Resource) => void;
+  onPublish: (item: Resource) => void;
+}
+
+function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPublish }: ResourceSectionProps) {
   return (
     <>
       <div className="font-heading text-[16px] text-text tracking-[0.01em] mb-3 flex items-center gap-[9px]">
         <i className={`ti ti-${icon}`} /> {title}
       </div>
       <div className="flex flex-col gap-[10px] mb-[26px] last:mb-0">
-        {items.map((item) => (
-          <div key={item.title} className="bg-card border border-border rounded-[11px] px-[18px] py-[15px] flex items-center justify-between gap-[14px] flex-wrap">
-            <div className="flex-1 min-w-[220px]">
-              <div className="text-[14px] font-bold text-text mb-[3px]">{item.title}</div>
-              <div className="text-[12.5px] text-muted mb-[7px] leading-[1.4]">{item.desc}</div>
-              <div className="text-[11.5px] text-muted flex items-center gap-[6px] flex-wrap">
-                {item.meta.map((m, i) => (
-                  <span key={i} className="flex items-center gap-[6px]">
-                    {i > 0 && <span className="w-[3px] h-[3px] rounded-full bg-border shrink-0" />}
-                    {m}
-                  </span>
-                ))}
+        {items.length === 0 ? (
+          <div className="text-[12.5px] text-muted">No resources yet.</div>
+        ) : (
+          items.map((item) => (
+            <div key={item.id} className="bg-card border border-border rounded-[11px] px-[18px] py-[15px] flex items-center justify-between gap-[14px] flex-wrap">
+              <div className="flex-1 min-w-[220px]">
+                <div className="text-[14px] font-bold text-text mb-[3px]">{item.title}</div>
+                <div className="text-[12.5px] text-muted mb-[7px] leading-[1.4]">{item.description}</div>
+                <div className="text-[11.5px] text-muted flex items-center gap-[6px] flex-wrap">
+                  {metaFor(item).map((m, i) => (
+                    <span key={i} className="flex items-center gap-[6px]">
+                      {i > 0 && <span className="w-[3px] h-[3px] rounded-full bg-border shrink-0" />}
+                      {m}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-[14px] shrink-0">
+                <span className={`text-[11px] font-bold px-[11px] py-1 rounded-full ${item.status === 'published' ? 'bg-success-light text-success-dark' : 'bg-bg text-muted border border-border'}`}>
+                  {item.status === 'published' ? 'Published' : 'Coming Soon'}
+                </span>
+                <div className="flex items-center gap-[13px]">
+                  {item.status === 'published' ? (
+                    <>
+                      <button onClick={() => onPreview(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Preview</button>
+                      <button onClick={() => onEdit(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
+                      <button onClick={() => onHide(item)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Hide</button>
+                    </>
+                  ) : (
+                    <button onClick={() => onPublish(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Publish</button>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-[14px] shrink-0">
-              <span className={`text-[11px] font-bold px-[11px] py-1 rounded-full ${item.status === 'published' ? 'bg-success-light text-success-dark' : 'bg-bg text-muted border border-border'}`}>
-                {item.status === 'published' ? 'Published' : 'Coming Soon'}
-              </span>
-              <div className="flex items-center gap-[13px]">
-                {item.status === 'published' ? (
-                  <>
-                    <button className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Preview</button>
-                    <button className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
-                    <button className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Hide</button>
-                  </>
-                ) : (
-                  <span className="text-[12.5px] font-bold text-muted cursor-default">Coming soon</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </>
   );
 }
 
 export function ResourcesPage() {
+  const { groups, createResource, updateResource } = useResources();
+  const [previewItem, setPreviewItem] = useState<Resource | null>(null);
+  const [editItem, setEditItem] = useState<Resource | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  function handleHide(item: Resource) {
+    updateResource(item.id, { status: 'coming-soon' });
+  }
+
+  function handlePublish(item: Resource) {
+    updateResource(item.id, { status: 'published' });
+  }
+
+  const sections: { key: keyof ResourceGroups; icon: string; title: string }[] = [
+    { key: 'Handbooks', icon: 'book', title: 'Handbooks' },
+    { key: 'Toolkits', icon: 'briefcase', title: 'Project Toolkits' },
+    { key: 'Videos', icon: 'video', title: 'Video Tutorials' },
+    { key: 'Other', icon: 'dots', title: 'Other' },
+  ];
+
   return (
     <>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <Topbar title="Resources Manager" />
-        <Button variant="primary">
+        <Button variant="primary" onClick={() => setAddOpen(true)}>
           <i className="ti ti-plus text-[13px] mr-1" />Add Resource
         </Button>
       </div>
@@ -130,10 +144,18 @@ export function ResourcesPage() {
       </div>
 
       <Card>
-        <ResourceSection icon="book" title="Handbooks" items={HANDBOOKS} />
-        <ResourceSection icon="briefcase" title="Project Toolkits" items={TOOLKITS} />
-        <ResourceSection icon="video" title="Video Tutorials" items={VIDEOS} />
-        <ResourceSection icon="dots" title="Other" items={OTHER} />
+        {sections.map((s) => (
+          <ResourceSection
+            key={s.key}
+            icon={s.icon}
+            title={s.title}
+            items={groups[s.key]}
+            onPreview={setPreviewItem}
+            onEdit={setEditItem}
+            onHide={handleHide}
+            onPublish={handlePublish}
+          />
+        ))}
       </Card>
 
       <Card>
@@ -177,6 +199,10 @@ export function ResourcesPage() {
           </div>
         ))}
       </Card>
+
+      <ResourcePreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
+      <ResourceEditModal item={editItem} onClose={() => setEditItem(null)} onSave={updateResource} />
+      <AddResourceModal open={addOpen} onClose={() => setAddOpen(false)} onCreate={createResource} />
     </>
   );
 }
