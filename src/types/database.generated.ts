@@ -70,6 +70,7 @@ export interface Database {
           gender: string | null;
           education_level: string | null;
           date_of_birth: string | null;
+          location: string | null;
           chapter_id: string | null;
           created_at: string;
         };
@@ -81,6 +82,7 @@ export interface Database {
           gender?: string | null;
           education_level?: string | null;
           date_of_birth?: string | null;
+          location?: string | null;
           chapter_id?: string | null;
           created_at?: string;
         };
@@ -92,6 +94,7 @@ export interface Database {
           gender?: string | null;
           education_level?: string | null;
           date_of_birth?: string | null;
+          location?: string | null;
           chapter_id?: string | null;
           created_at?: string;
         };

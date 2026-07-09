@@ -4,7 +4,7 @@ import { methodNotAllowed, sendJson } from '../_lib/http.js';
 import { firstQueryValue, parsePageParams } from '../_lib/pagination.js';
 import type { Database } from '../../src/types/database.generated.js';
 
-const PROFILE_COLUMNS = 'id, first_name, last_name, role, gender, education_level, date_of_birth, chapter_id, created_at, chapters:chapter_id ( name )';
+const PROFILE_COLUMNS = 'id, first_name, last_name, role, gender, education_level, date_of_birth, location, chapter_id, created_at, chapters:chapter_id ( name )';
 
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 

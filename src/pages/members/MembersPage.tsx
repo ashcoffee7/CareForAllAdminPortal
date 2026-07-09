@@ -5,7 +5,7 @@ import { StatCard } from '../../components/StatCard';
 import { SearchBar } from '../../components/SearchBar';
 import { useMemberAggregates } from './useMemberAggregates';
 import { useMemberDirectory, MEMBER_PAGE_SIZE } from './useMemberDirectory';
-import { computeGenderEntries, computeEducationEntries, computeAgeEntries } from './demographics';
+import { computeGenderEntries, computeEducationEntries, computeAgeEntries, computeCountryEntries, computeStateEntries } from './demographics';
 import { DemographicsBars } from './DemographicsBars';
 import { MemberDirectory } from './MemberDirectory';
 
@@ -18,6 +18,8 @@ export function MembersPage() {
   const genderEntries = computeGenderEntries(allMembers);
   const educationEntries = computeEducationEntries(allMembers);
   const { entries: ageEntries, withDobCount } = computeAgeEntries(allMembers);
+  const countryDemo = computeCountryEntries(allMembers);
+  const stateDemo = computeStateEntries(allMembers);
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -31,8 +33,8 @@ export function MembersPage() {
       <div className="grid grid-cols-4 max-portal:grid-cols-2 gap-[14px]">
         <StatCard label="Total Members" value={allMembers.length} />
         <StatCard label="Total Chapters" value={chapterCount ?? '—'} />
-        <StatCard label="Total Countries" value="Not tracked" valueClassName="text-muted text-[16px]" />
-        <StatCard label="Total States" value="Not tracked" valueClassName="text-muted text-[16px]" />
+        <StatCard label="Total Countries" value={countryDemo.distinctCount} />
+        <StatCard label="Total States" value={stateDemo.distinctCount} />
       </div>
 
       <div className="grid grid-cols-2 max-portal:grid-cols-1 gap-[18px]">
@@ -40,16 +42,18 @@ export function MembersPage() {
           <div className="text-[14px] font-bold text-text mb-4 flex items-center gap-2">
             <i className="ti ti-world text-muted text-[17px]" /> Members by Country
           </div>
-          <div className="text-center py-6 text-muted text-[13px] leading-[1.6]">
-            Location isn't collected yet -- every member profile currently has an empty location field. This will populate once location data starts being gathered.
+          <DemographicsBars entries={countryDemo.entries} />
+          <div className="text-[11px] text-muted mt-2">
+            Based on {countryDemo.matchedCount} of {allMembers.length} members with a recognizable location on file.
           </div>
         </Card>
         <Card>
           <div className="text-[14px] font-bold text-text mb-4 flex items-center gap-2">
             <i className="ti ti-map-pin text-muted text-[17px]" /> Members by U.S. State
           </div>
-          <div className="text-center py-6 text-muted text-[13px] leading-[1.6]">
-            Location isn't collected yet -- every member profile currently has an empty location field. This will populate once location data starts being gathered.
+          <DemographicsBars entries={stateDemo.entries} />
+          <div className="text-[11px] text-muted mt-2">
+            Based on {stateDemo.matchedCount} of {allMembers.length} members with a recognizable location on file.
           </div>
         </Card>
       </div>
