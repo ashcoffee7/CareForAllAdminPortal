@@ -1,0 +1,45 @@
+import { useCallback, useEffect, useState } from 'react';
+import { api, apiOrToast, mutateOrToast } from '../../lib/apiClient';
+import type { Resource } from '../../types/database';
+
+export interface ResourceGroups {
+  Handbooks: Resource[];
+  Toolkits: Resource[];
+  Videos: Resource[];
+  Other: Resource[];
+}
+
+function groupByCategory(list: Resource[]): ResourceGroups {
+  const groups: ResourceGroups = { Handbooks: [], Toolkits: [], Videos: [], Other: [] };
+  list.forEach((r) => {
+    (groups[r.category] ?? groups.Other).push(r);
+  });
+  return groups;
+}
+
+export function useResources() {
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const result = await apiOrToast(api.get<{ data: Resource[] }>('/resources'), 'Loading resources', { data: [] });
+    setResources(result.data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function createResource(payload: Partial<Resource>) {
+    const ok = await mutateOrToast(api.post('/resources', payload), 'Creating resource');
+    if (ok) { await load(); }
+    return ok;
+  }
+
+  async function updateResource(id: string, payload: Partial<Resource>) {
+    const ok = await mutateOrToast(api.patch(`/resources/${id}`, payload), 'Updating resource');
+    if (ok) { await load(); }
+    return ok;
+  }
+
+  return { groups: groupByCategory(resources), loading, createResource, updateResource, reload: load };
+}

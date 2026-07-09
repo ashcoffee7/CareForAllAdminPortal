@@ -26,3 +26,5 @@ export type Mentor = Database['public']['Tables']['mentors']['Row'];
 // Only ever selected via `{ count: 'exact', head: true }` today -- extend
 // with real columns if a future call site selects them.
 export type MentorshipSession = Database['public']['Tables']['mentorship_sessions']['Row'];
+
+export type Resource = Database['public']['Tables']['resources']['Row'];
