@@ -3,13 +3,33 @@ import { api, apiOrToast } from '../../lib/apiClient';
 import { Card } from '../../components/Card';
 import { PieChart, type PieSlice } from '../../charts/PieChart';
 
-const ACTIVITY_TYPE_COLORS: Record<string, string> = {
-  Projects: '#245ec2',
-  Mapping: '#ff5961',
-  Mapathons: '#10b981',
-  Mentorship: '#f59e0b',
-  'Impact Hours': '#7db9ff',
-};
+// Fixed set of activity categories, always shown in the legend -- even at
+// zero -- so the chart's shape doesn't silently change depending on what
+// happened to get logged. Order here is display order.
+const CATEGORIES: { label: string; color: string }[] = [
+  { label: 'Projects', color: '#245ec2' },
+  { label: 'Mapping', color: '#ff5961' },
+  { label: 'Mapathons', color: '#10b981' },
+  { label: 'Mentorship', color: '#f59e0b' },
+  { label: 'Impact Hours', color: '#7db9ff' },
+];
+
+const OTHER_COLOR = '#6b7280';
+
+// service_logs.activity_type is free text, not an enum matching these
+// labels exactly -- an exact-key lookup was silently falling back to gray
+// for almost every real submission. Bucketed by substring match instead,
+// checked in priority order: "mapathon" also contains "map", so it has to
+// be checked before the general mapping bucket.
+function classify(activityType: string): string | null {
+  const t = activityType.toLowerCase();
+  if (t.includes('project')) { return 'Projects'; }
+  if (t.includes('mapathon')) { return 'Mapathons'; }
+  if (t.includes('map')) { return 'Mapping'; }
+  if (t.includes('mentor')) { return 'Mentorship'; }
+  if (t.includes('impact')) { return 'Impact Hours'; }
+  return null;
+}
 
 interface Slice extends PieSlice {
   label: string;
@@ -29,21 +49,24 @@ export function HoursPieChart() {
         { data: [] }
       );
 
-      const tally: Record<string, number> = {};
+      const counts: Record<string, number> = {};
+      CATEGORIES.forEach((c) => { counts[c.label] = 0; });
+      let otherCount = 0;
+
       result.data.forEach((row) => {
-        const key = row.activity_type || 'Other';
-        tally[key] = (tally[key] || 0) + 1;
+        const category = classify(row.activity_type || '');
+        if (category) { counts[category]++; } else { otherCount++; }
       });
 
-      let runningTotal = 0;
-      const computed = Object.keys(tally).map((label) => {
-        runningTotal += tally[label];
-        return { label, value: tally[label], color: ACTIVITY_TYPE_COLORS[label] || '#6b7280' };
-      });
+      // The five known categories always render in the legend, even at
+      // zero. An "Other" slice only appears if some submission genuinely
+      // didn't match any of them, so real data is never silently dropped.
+      const computed: Slice[] = CATEGORIES.map((c) => ({ label: c.label, value: counts[c.label], color: c.color }));
+      if (otherCount > 0) { computed.push({ label: 'Other', value: otherCount, color: OTHER_COLOR }); }
 
       if (!cancelled) {
         setSlices(computed);
-        setTotal(runningTotal);
+        setTotal(computed.reduce((sum, s) => sum + s.value, 0));
       }
     })();
 
@@ -58,21 +81,22 @@ export function HoursPieChart() {
       <div className="text-[11.5px] text-muted mb-[6px]">
         Share of all completed activity and time log submissions, by activity type.
       </div>
-      <PieChart data={slices} size={200} />
-      {total > 0 ? (
-        <div className="flex flex-col gap-[9px] mt-[14px]">
-          {slices.map((slice) => {
-            const pct = Math.round((slice.value / total) * 100);
-            return (
-              <div key={slice.label} className="flex items-center gap-[9px] text-[12.5px] text-text">
-                <div className="w-[11px] h-[11px] rounded-[3px] shrink-0" style={{ background: slice.color }} />
-                <span>{slice.label}</span>
-                <span className="ml-auto font-bold text-muted">{pct}% ({slice.value} submissions)</span>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
+      {/* Zero-value slices would draw a degenerate arc, so only non-zero
+          ones go to the pie geometry -- but every category still appears
+          below in the legend regardless of count. */}
+      <PieChart data={slices.filter((s) => s.value > 0)} size={200} />
+      <div className="flex flex-col gap-[9px] mt-[14px]">
+        {slices.map((slice) => {
+          const pct = total > 0 ? Math.round((slice.value / total) * 100) : 0;
+          return (
+            <div key={slice.label} className="flex items-center gap-[9px] text-[12.5px] text-text">
+              <div className="w-[11px] h-[11px] rounded-[3px] shrink-0" style={{ background: slice.color }} />
+              <span>{slice.label}</span>
+              <span className="ml-auto font-bold text-muted">{pct}% ({slice.value} submissions)</span>
+            </div>
+          );
+        })}
+      </div>
     </Card>
   );
 }

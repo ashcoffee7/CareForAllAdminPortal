@@ -27,3 +27,5 @@ dist-ssr
 
 # Supabase CLI local cache (project ref, pooler url, etc.) -- machine-local, not shared config
 supabase/.temp
+.vercel
+.env*
