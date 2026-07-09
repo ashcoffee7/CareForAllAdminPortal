@@ -41,7 +41,7 @@ export function ApprovalsPage() {
       />
 
       {activeTab === 'projects' ? <ProjectSubmissionsTab onMutated={bumpStats} /> : null}
-      {activeTab === 'mapping' ? <MappingSubmissionsTab /> : null}
+      {activeTab === 'mapping' ? <MappingSubmissionsTab onMutated={bumpStats} /> : null}
       {activeTab === 'verification' ? <VerificationTab onMutated={bumpStats} /> : null}
     </>
   );
