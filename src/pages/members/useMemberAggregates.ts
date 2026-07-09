@@ -11,6 +11,7 @@ export interface MemberAggregateRow {
   gender: string | null;
   education_level: string | null;
   date_of_birth: string | null;
+  location: string | null;
 }
 
 interface AggregateState {
