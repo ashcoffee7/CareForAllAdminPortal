@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, apiOrToast } from '../../lib/apiClient';
 import { Card } from '../../components/Card';
 import { PieChart, type PieSlice } from '../../charts/PieChart';
+import { classifyActivity } from '../../utils/activityCategory';
 
 // Fixed set of activity categories, always shown in the legend -- even at
 // zero -- so the chart's shape doesn't silently change depending on what
@@ -15,21 +16,6 @@ const CATEGORIES: { label: string; color: string }[] = [
 ];
 
 const OTHER_COLOR = '#6b7280';
-
-// service_logs.activity_type is free text, not an enum matching these
-// labels exactly -- an exact-key lookup was silently falling back to gray
-// for almost every real submission. Bucketed by substring match instead,
-// checked in priority order: "mapathon" also contains "map", so it has to
-// be checked before the general mapping bucket.
-function classify(activityType: string): string | null {
-  const t = activityType.toLowerCase();
-  if (t.includes('project')) { return 'Projects'; }
-  if (t.includes('mapathon')) { return 'Mapathons'; }
-  if (t.includes('map')) { return 'Mapping'; }
-  if (t.includes('mentor')) { return 'Mentorship'; }
-  if (t.includes('impact')) { return 'Impact Hours'; }
-  return null;
-}
 
 interface Slice extends PieSlice {
   label: string;
@@ -54,7 +40,7 @@ export function HoursPieChart() {
       let otherCount = 0;
 
       result.data.forEach((row) => {
-        const category = classify(row.activity_type || '');
+        const category = classifyActivity(row.activity_type || '');
         if (category) { counts[category]++; } else { otherCount++; }
       });
 
