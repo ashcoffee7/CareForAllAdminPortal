@@ -12,9 +12,6 @@ export interface EnrichedChapter {
   lead: string;
   memberCount: number;
   projectCount: number;
-  // True when projectCount came from chapters.project_count_override
-  // (an admin correction) rather than the derived service_logs count.
-  projectCountIsOverride: boolean;
   quarterStatuses: QuarterStatus[];
   checkins: ChapterCheckin[];
   compliant: boolean;
@@ -30,9 +27,9 @@ const MARKED_COMPLETE_NOTE = 'Marked complete by admin (no submission on file).'
 
 // The compliance derivation itself now lives server-side in
 // api/_handlers/chapters.ts's enriched() -- this hook fetches the
-// computed view for the requested year and exposes the two admin actions
-// on top of it (project count override, mark/unmark a quarterly
-// check-in), reloading the computed view after each.
+// computed view for the requested year and exposes the mark/unmark
+// quarterly check-in action on top of it, reloading the computed view
+// after each.
 export function useChapterData() {
   const currentYear = new Date().getFullYear();
   const [enriched, setEnriched] = useState<EnrichedChapter[]>([]);
@@ -55,14 +52,6 @@ export function useChapterData() {
     load();
   }, [load]);
 
-  async function updateProjectCountOverride(chapterId: string, value: number | null) {
-    const ok = await mutateOrToast(
-      api.patch(`/chapters/${chapterId}`, { project_count_override: value }),
-      'Updating project count'
-    );
-    if (ok) { await load(); }
-  }
-
   async function markQuarterComplete(chapterName: string, quarter: Quarter) {
     const ok = await mutateOrToast(
       api.post('/chapter-checkins', { chapter_name: chapterName, quarter, activities: MARKED_COMPLETE_NOTE }),
@@ -82,7 +71,6 @@ export function useChapterData() {
     currentYear,
     loading,
     reload: load,
-    updateProjectCountOverride,
     markQuarterComplete,
     unmarkQuarterComplete,
   };

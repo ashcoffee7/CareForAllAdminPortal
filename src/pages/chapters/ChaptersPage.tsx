@@ -10,15 +10,7 @@ import { ChapterComplianceTable } from './ChapterComplianceTable';
 import { ChapterDirectory } from './ChapterDirectory';
 
 export function ChaptersPage() {
-  const {
-    enriched,
-    deadlines,
-    currentYear,
-    reload,
-    updateProjectCountOverride,
-    markQuarterComplete,
-    unmarkQuarterComplete,
-  } = useChapterData();
+  const { enriched, deadlines, currentYear, reload, markQuarterComplete, unmarkQuarterComplete } = useChapterData();
   const [search, setSearch] = useState('');
 
   const compliantCount = enriched.filter((c) => c.compliant).length;
@@ -53,7 +45,6 @@ export function ChaptersPage() {
         <ChapterComplianceTable
           chapters={enriched}
           currentYear={currentYear}
-          onUpdateProjectCount={updateProjectCountOverride}
           onMarkQuarterComplete={markQuarterComplete}
           onUnmarkQuarterComplete={unmarkQuarterComplete}
         />

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { StatusPill } from '../../components/StatusPill';
-import { IconButton } from '../../components/IconButton';
 import { Button } from '../../components/Button';
 import { formatDate } from '../../utils/formatDate';
 import type { EnrichedChapter, Quarter, QuarterStatus } from './useChapterData';
@@ -9,7 +8,6 @@ import type { EnrichedChapter, Quarter, QuarterStatus } from './useChapterData';
 interface ChapterComplianceTableProps {
   chapters: EnrichedChapter[];
   currentYear: number;
-  onUpdateProjectCount: (chapterId: string, value: number | null) => void;
   onMarkQuarterComplete: (chapterName: string, quarter: Quarter) => void;
   onUnmarkQuarterComplete: (checkinId: string) => void;
 }
@@ -31,34 +29,13 @@ const DOT_TITLE: Record<QuarterStatus, string> = {
 export function ChapterComplianceTable({
   chapters,
   currentYear,
-  onUpdateProjectCount,
   onMarkQuarterComplete,
   onUnmarkQuarterComplete,
 }: ChapterComplianceTableProps) {
   const [openChapterId, setOpenChapterId] = useState<string | null>(null);
-  const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
-  const [projectCountDraft, setProjectCountDraft] = useState('');
 
   const sorted = [...chapters].sort((a, b) => (a.compliant ? 1 : 0) - (b.compliant ? 1 : 0));
   const openChapter = chapters.find((c) => c.id === openChapterId) ?? null;
-
-  function startEditing(ch: EnrichedChapter) {
-    setEditingChapterId(ch.id);
-    setProjectCountDraft(String(ch.projectCount));
-  }
-
-  function saveProjectCount(chapterId: string) {
-    const parsed = Number(projectCountDraft);
-    if (Number.isFinite(parsed) && parsed >= 0) {
-      onUpdateProjectCount(chapterId, Math.round(parsed));
-    }
-    setEditingChapterId(null);
-  }
-
-  function clearOverride(chapterId: string) {
-    onUpdateProjectCount(chapterId, null);
-    setEditingChapterId(null);
-  }
 
   return (
     <>
@@ -76,37 +53,10 @@ export function ChapterComplianceTable({
             <div className="text-[13px] font-semibold text-text">{ch.name}</div>
             <div className="text-[11.5px] text-muted">{ch.lead}</div>
 
-            {editingChapterId === ch.id ? (
-              <div className="flex items-center gap-[6px]">
-                <input
-                  type="number"
-                  min={0}
-                  autoFocus
-                  value={projectCountDraft}
-                  onChange={(e) => setProjectCountDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { saveProjectCount(ch.id); } if (e.key === 'Escape') { setEditingChapterId(null); } }}
-                  className="w-[56px] px-2 py-1 border border-border rounded-md text-[12px] text-text bg-white outline-none focus:border-brand"
-                />
-                <IconButton icon="check" variant="approve" aria-label="Save" onClick={() => saveProjectCount(ch.id)} className="w-[24px] h-[24px]" />
-                <IconButton icon="x" variant="reject" aria-label="Cancel" onClick={() => setEditingChapterId(null)} className="w-[24px] h-[24px]" />
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-[7px] text-[12px] font-semibold text-text">
-                <span className={`w-[10px] h-[10px] rounded-full shrink-0 ${ch.projectCount >= 2 ? 'bg-success' : 'bg-accent'}`} />
-                {ch.projectCount} / 2
-                {ch.projectCountIsOverride ? (
-                  <button
-                    type="button"
-                    title="Reset to auto-calculated count"
-                    onClick={() => clearOverride(ch.id)}
-                    className="text-[10px] font-bold text-muted normal-case bg-none border-none cursor-pointer p-0 hover:text-brand hover:underline"
-                  >
-                    (manual — reset)
-                  </button>
-                ) : null}
-                <IconButton icon="pencil" variant="neutral" aria-label="Edit project count" onClick={() => startEditing(ch)} className="w-[24px] h-[24px]" />
-              </div>
-            )}
+            <div className="inline-flex items-center gap-[7px] text-[12px] font-semibold text-text">
+              <span className={`w-[10px] h-[10px] rounded-full shrink-0 ${ch.projectCount >= 2 ? 'bg-success' : 'bg-accent'}`} />
+              {ch.projectCount} / 2
+            </div>
 
             <div onClick={() => setOpenChapterId(ch.id)} className="flex gap-[5px] cursor-pointer [&:hover>div]:opacity-80">
               {ch.quarterStatuses.map((status, i) => (

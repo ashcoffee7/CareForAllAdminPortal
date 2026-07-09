@@ -18,19 +18,16 @@ export interface Database {
           id: string;
           name: string;
           created_at: string;
-          project_count_override: number | null;
         };
         Insert: {
           id?: string;
           name: string;
           created_at?: string;
-          project_count_override?: number | null;
         };
         Update: {
           id?: string;
           name?: string;
           created_at?: string;
-          project_count_override?: number | null;
         };
         Relationships: [];
       };
@@ -140,11 +137,13 @@ export interface Database {
           id: string;
           user_id: string | null;
           name: string | null;
+          email: string | null;
           org_name: string | null;
           activity_type: string;
           hours: number;
           status: 'pending' | 'approved' | 'rejected';
           description: string | null;
+          rejection_reason: string | null;
           submitted_at: string;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -160,11 +159,13 @@ export interface Database {
           id?: string;
           user_id?: string | null;
           name?: string | null;
+          email?: string | null;
           org_name?: string | null;
           activity_type: string;
           hours: number;
           status?: 'pending' | 'approved' | 'rejected';
           description?: string | null;
+          rejection_reason?: string | null;
           submitted_at?: string;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -180,11 +181,13 @@ export interface Database {
           id?: string;
           user_id?: string | null;
           name?: string | null;
+          email?: string | null;
           org_name?: string | null;
           activity_type?: string;
           hours?: number;
           status?: 'pending' | 'approved' | 'rejected';
           description?: string | null;
+          rejection_reason?: string | null;
           submitted_at?: string;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -202,6 +205,41 @@ export interface Database {
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      service_log_contributions: {
+        Row: {
+          id: string;
+          service_log_id: string;
+          name: string | null;
+          email: string | null;
+          hours: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          service_log_id: string;
+          name?: string | null;
+          email?: string | null;
+          hours: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          service_log_id?: string;
+          name?: string | null;
+          email?: string | null;
+          hours?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'service_log_contributions_service_log_id_fkey';
+            columns: ['service_log_id'];
+            isOneToOne: false;
+            referencedRelation: 'service_logs';
             referencedColumns: ['id'];
           },
         ];
