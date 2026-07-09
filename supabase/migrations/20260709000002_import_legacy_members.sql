@@ -27,6 +27,19 @@
 -- If a CSV had two rows for the same email, only one is kept (arbitrary
 -- but stable pick via distinct on) rather than creating a duplicate
 -- person.
+--
+-- NOTE: this migration already ran once (2026-07-09) and produced 2 known
+-- duplicate pairs (manually cleaned up afterward) -- the same real person
+-- submitted the CSV twice under two different email addresses, and since
+-- dedup only ever operated on email, both survived as separate new
+-- profiles. Fixed below with a second dedup pass on (first_name,
+-- last_name, date_of_birth) among the new-person candidates specifically
+-- -- only collapsed when date_of_birth is present on both, since name
+-- alone isn't a safe enough signal to merge two people (and two rows
+-- that are both missing a DOB are left as-is instead of guessed).
+-- Also added first_name/last_name to the existing-match backfill below,
+-- which the original run omitted (existing profiles with a null name
+-- never got backfilled from the CSV).
 
 with source as (
   select distinct on (lower(trim(email)))
@@ -83,21 +96,40 @@ new_people as (
   left join public.users u on lower(trim(u.email)) = lower(m.email)
   where u.id is null
 ),
+-- Same real person can appear under two different emails -- email-only
+-- dedup can't catch that. Collapse by (first_name, last_name,
+-- date_of_birth) when DOB is present on both sides (a name match alone
+-- is too weak a signal); rows missing a DOB are kept as-is rather than
+-- risking merging two different people who happen to share a name.
+new_people_deduped as (
+  select distinct on (lower(trim(first_name)), lower(trim(last_name)), date_of_birth)
+    *
+  from new_people
+  where date_of_birth is not null
+  order by lower(trim(first_name)), lower(trim(last_name)), date_of_birth, email
+
+  union all
+
+  select *
+  from new_people
+  where date_of_birth is null
+),
 inserted_users as (
   insert into public.users (id, name, email)
   select gen_random_uuid(), np.full_name, np.email
-  from new_people np
+  from new_people_deduped np
   returning id, email
 )
 insert into public.profiles (id, first_name, last_name, role, gender, education_level, date_of_birth, location)
 select iu.id, np.first_name, np.last_name, 'independent_member', np.gender, np.education_level, np.date_of_birth, np.location
 from inserted_users iu
-join new_people np on lower(trim(iu.email)) = lower(np.email);
+join new_people_deduped np on lower(trim(iu.email)) = lower(np.email);
 
 -- Existing matches: fill in only currently-null fields, never overwrite.
 with source as (
   select distinct on (lower(trim(email)))
     trim(email) as email,
+    trim(full_name) as full_name,
     nullif(trim(gender), '') as gender_raw,
     nullif(trim(date_of_birth), '') as dob_raw,
     nullif(trim(location), '') as location,
@@ -109,6 +141,11 @@ with source as (
 mapped as (
   select
     email,
+    split_part(full_name, ' ', 1) as first_name,
+    case when position(' ' in full_name) > 0
+      then nullif(trim(substring(full_name from position(' ' in full_name) + 1)), '')
+      else null
+    end as last_name,
     case
       when gender_raw in ('Male', 'Female', 'Nonbinary', 'Prefer Not to Say', 'Other') then gender_raw::gender_type
       else null
@@ -139,6 +176,8 @@ mapped as (
 )
 update public.profiles p
 set
+  first_name = coalesce(p.first_name, m.first_name),
+  last_name = coalesce(p.last_name, m.last_name),
   gender = coalesce(p.gender, m.gender),
   date_of_birth = coalesce(p.date_of_birth, m.date_of_birth),
   location = coalesce(p.location, m.location),
