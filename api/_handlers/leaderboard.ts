@@ -7,6 +7,10 @@ interface IndividualRow {
   name: string;
   chapter: string;
   hours: number;
+  // null for name-only fallback entries with no linked profile (e.g.
+  // mentor office-hours logged without one) -- nothing to open a member
+  // profile for in that case.
+  userId: string | null;
 }
 
 interface ChapterRow {
@@ -54,21 +58,24 @@ async function individuals(res: VercelResponse, ctx: RequestContext) {
     let key: string;
     let displayName: string;
     let chapter: string;
+    let userId: string | null;
 
     const profile = row.user_id ? profileById[row.user_id] : undefined;
     if (row.user_id && profile) {
       key = row.user_id;
       displayName = ((profile.first_name || '') + ' ' + (profile.last_name || '')).trim();
       chapter = profile.chapters?.name || (profile.role === 'mentor' ? 'Mentor' : '-');
+      userId = row.user_id;
     } else if (row.name) {
       key = 'name:' + row.name.toLowerCase();
       displayName = row.name;
       chapter = '-';
+      userId = null;
     } else {
       return;
     }
 
-    if (!totals[key]) { totals[key] = { name: displayName, chapter, hours: 0 }; }
+    if (!totals[key]) { totals[key] = { name: displayName, chapter, hours: 0, userId }; }
     totals[key].hours += Number(row.hours) || 0;
   });
 

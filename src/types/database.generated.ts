@@ -31,6 +31,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      // NextAuth-style identity table -- profiles.id and service_logs.user_id
+      // both reference this table's id (see the FK inspection findings in
+      // 20260707000002's comments), not the other way around.
+      users: {
+        Row: {
+          id: string;
+          name: string | null;
+          email: string | null;
+          emailVerified: string | null;
+          image: string | null;
+        };
+        Insert: {
+          id: string;
+          name?: string | null;
+          email?: string | null;
+          emailVerified?: string | null;
+          image?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string | null;
+          email?: string | null;
+          emailVerified?: string | null;
+          image?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;

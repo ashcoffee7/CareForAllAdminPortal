@@ -6,6 +6,7 @@ export interface IndividualLeaderboardRow {
   name: string;
   chapter: string;
   hours: number;
+  userId: string | null;
 }
 
 export function useIndividualLeaderboard() {

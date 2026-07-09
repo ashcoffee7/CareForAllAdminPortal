@@ -60,7 +60,14 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
   if (req.method === 'GET') {
     const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', id).single();
     if (error) { throw error; }
-    sendJson(res, 200, { data });
+
+    // email lives on public.users, not profiles -- profiles.id references
+    // users.id (a shared-PK relationship), so this is a second lookup by
+    // id rather than an untested PostgREST embed across that FK.
+    const { data: userRow, error: userError } = await supabase.from('users').select('email').eq('id', id).maybeSingle();
+    if (userError) { throw userError; }
+
+    sendJson(res, 200, { data: { ...data, email: userRow?.email ?? null } });
     return;
   }
 
