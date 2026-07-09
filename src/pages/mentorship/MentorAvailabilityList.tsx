@@ -52,7 +52,6 @@ export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability
       <div>
         {mentors.map((mentor, i) => {
           if (!visible.includes(mentor)) { return null; }
-          const linkDisplay = (mentor.calendly_link || '').replace(/^https?:\/\//, '') || '—';
 
           return (
             <div key={mentor.id} className="grid grid-cols-[2.4fr_1fr_1fr_1.2fr] gap-[14px] items-center py-[14px] border-b border-border last:border-b-0">
@@ -65,7 +64,20 @@ export function MentorAvailabilityList({ mentors, searchQuery, onSetAvailability
                 </div>
                 <div className="text-[13px] font-semibold text-text">{mentor.name || 'Unknown'}</div>
               </div>
-              <div className="text-[11.5px] text-muted break-all">{linkDisplay}</div>
+              <div className="text-[11.5px]">
+                {mentor.calendly_link ? (
+                  <a
+                    href={mentor.calendly_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand font-semibold hover:underline"
+                  >
+                    Link
+                  </a>
+                ) : (
+                  <span className="text-muted">-</span>
+                )}
+              </div>
               <div>
                 <StatusPill variant={mentor.available ? 'success' : 'warning'}>
                   {mentor.available ? 'Available' : 'Unavailable'}
