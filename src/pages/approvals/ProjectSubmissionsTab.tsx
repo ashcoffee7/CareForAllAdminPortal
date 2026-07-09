@@ -3,6 +3,7 @@ import { Card } from '../../components/Card';
 import { IconButton } from '../../components/IconButton';
 import { Modal } from '../../components/Modal';
 import { Pagination } from '../../components/Pagination';
+import { MemberProfileModal } from '../../components/MemberProfileModal';
 import { formatDate } from '../../utils/formatDate';
 import { formatHours } from '../../utils/formatHours';
 import { useSubmissions, type SubmissionRow } from './useSubmissions';
@@ -14,6 +15,7 @@ interface ProjectSubmissionsTabProps {
 export function ProjectSubmissionsTab({ onMutated }: ProjectSubmissionsTabProps) {
   const { submissions, page, setPage, total, pageSize, updateSubmissionStatus } = useSubmissions(onMutated);
   const [previewRow, setPreviewRow] = useState<SubmissionRow | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   return (
     <Card>
@@ -33,8 +35,11 @@ export function ProjectSubmissionsTab({ onMutated }: ProjectSubmissionsTabProps)
       ) : (
         submissions.map((row) => (
           <div key={row.id} className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1.3fr] gap-[10px] items-center py-3 border-b border-border last:border-b-0">
-            <div>
-              <div className="text-[13px] font-semibold text-text">{row.displayName}</div>
+            <div
+              onClick={row.user_id ? () => setSelectedProfileId(row.user_id) : undefined}
+              className={row.user_id ? 'cursor-pointer' : ''}
+            >
+              <div className={`text-[13px] font-semibold text-text ${row.user_id ? 'hover:underline' : ''}`}>{row.displayName}</div>
               <div className="text-[11.5px] text-muted">{row.displayChapter}</div>
             </div>
             <div className="text-[11.5px] text-muted">{row.activity_type || '-'}</div>
@@ -75,6 +80,8 @@ export function ProjectSubmissionsTab({ onMutated }: ProjectSubmissionsTabProps)
           </>
         ) : null}
       </Modal>
+
+      <MemberProfileModal profileId={selectedProfileId} onClose={() => setSelectedProfileId(null)} />
     </Card>
   );
 }

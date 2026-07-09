@@ -11,6 +11,7 @@ export interface VerificationRow {
   displayName: string;
   displayChapter: string;
   state: 'complete' | 'incomplete';
+  userId: string | null;
 }
 
 interface ServiceLogApiRow {
@@ -42,6 +43,7 @@ export function useVerifications(onMutated: () => void) {
         displayName: display.name,
         displayChapter: display.chapter,
         state: row.verification_completed ? 'complete' : 'incomplete',
+        userId: row.profiles?.id ?? null,
       };
     }));
     setLoading(false);

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '../../components/Card';
 import { FilterChips } from '../../components/FilterChips';
 import { SearchBar } from '../../components/SearchBar';
+import { MemberProfileModal } from '../../components/MemberProfileModal';
 import { formatDate } from '../../utils/formatDate';
 import { formatHours } from '../../utils/formatHours';
 import { useVerifications } from './useVerifications';
@@ -21,6 +22,7 @@ export function VerificationTab({ onMutated }: VerificationTabProps) {
   const { verifications, toggleVerification } = useVerifications(onMutated);
   const [filter, setFilter] = useState<VerifFilter>('incomplete');
   const [search, setSearch] = useState('');
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   const query = search.trim().toLowerCase();
   const visible = verifications.filter((v) => {
@@ -53,8 +55,11 @@ export function VerificationTab({ onMutated }: VerificationTabProps) {
         visible.map((v) => (
           <div key={v.id} className="bg-bg border border-border rounded-xl px-5 py-[18px] mb-[14px] last:mb-0">
             <div className="flex items-start justify-between gap-[14px] mb-[13px]">
-              <div>
-                <div className="text-[14px] font-semibold text-text">{v.displayName}</div>
+              <div
+                onClick={v.userId ? () => setSelectedProfileId(v.userId) : undefined}
+                className={v.userId ? 'cursor-pointer' : ''}
+              >
+                <div className={`text-[14px] font-semibold text-text ${v.userId ? 'hover:underline' : ''}`}>{v.displayName}</div>
                 <div className="text-[11.5px] text-muted mt-px">{v.displayChapter} - {formatHours(v.hours)} total</div>
               </div>
               <span className={`inline-flex items-center gap-[5px] px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-[0.04em] ${v.state === 'complete' ? 'bg-success-light text-success-dark' : 'bg-warning-light text-warning-dark'}`}>
@@ -85,6 +90,8 @@ export function VerificationTab({ onMutated }: VerificationTabProps) {
           </div>
         ))
       )}
+
+      <MemberProfileModal profileId={selectedProfileId} onClose={() => setSelectedProfileId(null)} />
     </Card>
   );
 }
