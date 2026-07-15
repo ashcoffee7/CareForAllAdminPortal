@@ -92,6 +92,11 @@ export function MappingSubmissionsTab({ onMutated }: MappingSubmissionsTabProps)
       </Modal>
 
       <MemberProfileModal profileId={selectedProfileId} onClose={() => setSelectedProfileId(null)} />
+
+      <div className="text-[14px] font-bold text-text mt-6 mb-4 flex items-center gap-2">
+        <i className="ti ti-map-2 text-muted text-[17px]" /> Mapathon Submissions
+      </div>
+      <div className="text-center py-6 text-muted text-[13px]">No mapathon submissions right now.</div>
     </Card>
   );
 }
