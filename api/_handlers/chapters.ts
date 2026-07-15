@@ -159,7 +159,7 @@ async function enriched(req: VercelRequest, res: VercelResponse, ctx: RequestCon
 
     const quarterStatuses: QuarterStatus[] = QUARTERS.map((q) => {
       const submitted = chapterCheckins.find(
-        (c) => c.quarter === q && new Date(c.submitted_at).getFullYear() === currentYear
+        (c) => c.quarter === q && !!c.submitted_at && new Date(c.submitted_at).getFullYear() === currentYear
       );
       if (submitted) { return 'done'; }
 

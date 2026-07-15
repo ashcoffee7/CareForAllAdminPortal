@@ -134,7 +134,7 @@ export function ChapterComplianceTable({
         {openChapter
           ? QUARTERS.map((q) => {
               const submitted = openChapter.checkins.find(
-                (c) => c.quarter === q && new Date(c.submitted_at).getFullYear() === currentYear
+                (c) => c.quarter === q && !!c.submitted_at && new Date(c.submitted_at).getFullYear() === currentYear
               );
 
               return (

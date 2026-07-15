@@ -113,30 +113,30 @@ export interface Database {
           id: string;
           chapter_name: string;
           quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
-          activities: string;
+          activities: string | null;
           member_count: number | null;
           challenges: string | null;
-          submitted_at: string;
+          submitted_at: string | null;
           user_id: string;
         };
         Insert: {
           id?: string;
           chapter_name: string;
           quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
-          activities: string;
+          activities?: string | null;
           member_count?: number | null;
           challenges?: string | null;
-          submitted_at?: string;
+          submitted_at?: string | null;
           user_id: string;
         };
         Update: {
           id?: string;
           chapter_name?: string;
           quarter?: 'Q1' | 'Q2' | 'Q3' | 'Q4';
-          activities?: string;
+          activities?: string | null;
           member_count?: number | null;
           challenges?: string | null;
-          submitted_at?: string;
+          submitted_at?: string | null;
           user_id?: string;
         };
         Relationships: [];
