@@ -37,6 +37,12 @@ async function collection(req: VercelRequest, res: VercelResponse, ctx: RequestC
         activities: body.activities,
         member_count: body.member_count ?? null,
         challenges: body.challenges ?? null,
+        // user_id is not-null and normally identifies the chapter lead
+        // submitting their own check-in; admin-initiated inserts (the
+        // "Mark Complete" action on the Chapter Compliance dashboard)
+        // stamp the recording admin instead, same as reviewed_by on
+        // service_logs.
+        user_id: ctx.user.id,
       })
       .select(CHECKIN_COLUMNS)
       .single();
