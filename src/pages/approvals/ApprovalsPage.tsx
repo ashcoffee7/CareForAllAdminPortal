@@ -33,7 +33,7 @@ export function ApprovalsPage() {
       <Tabs
         tabs={[
           { id: 'projects', label: 'Project & Impact Hour Submissions' },
-          { id: 'mapping', label: 'Mapping & Mapathon Submissions' },
+          { id: 'mapping', label: 'Mapping Submissions' },
           { id: 'verification', label: 'Service Hour Verification' },
         ]}
         activeId={activeTab}
