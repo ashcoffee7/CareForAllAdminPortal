@@ -88,17 +88,15 @@ function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPubl
               </div>
               <div className="flex items-center gap-[14px] shrink-0">
                 <span className={`text-[11px] font-bold px-[11px] py-1 rounded-full ${item.status === 'published' ? 'bg-success-light text-success-dark' : 'bg-bg text-muted border border-border'}`}>
-                  {item.status === 'published' ? 'Published' : 'Coming Soon'}
+                  {item.status === 'published' ? 'Published' : 'Hidden'}
                 </span>
                 <div className="flex items-center gap-[13px]">
+                  <button onClick={() => onPreview(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Preview</button>
+                  <button onClick={() => onEdit(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
                   {item.status === 'published' ? (
-                    <>
-                      <button onClick={() => onPreview(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Preview</button>
-                      <button onClick={() => onEdit(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Edit</button>
-                      <button onClick={() => onHide(item)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Hide</button>
-                    </>
+                    <button onClick={() => onHide(item)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Hide</button>
                   ) : (
-                    <button onClick={() => onPublish(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Publish</button>
+                    <button onClick={() => onPublish(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Unhide</button>
                   )}
                 </div>
               </div>
