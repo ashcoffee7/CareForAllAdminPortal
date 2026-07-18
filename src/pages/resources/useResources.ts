@@ -41,5 +41,11 @@ export function useResources() {
     return ok;
   }
 
-  return { groups: groupByCategory(resources), loading, createResource, updateResource, reload: load };
+  async function deleteResource(id: string) {
+    const ok = await mutateOrToast(api.delete(`/resources/${id}`), 'Deleting resource');
+    if (ok) { await load(); }
+    return ok;
+  }
+
+  return { groups: groupByCategory(resources), loading, createResource, updateResource, deleteResource, reload: load };
 }
