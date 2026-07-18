@@ -2,6 +2,6 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/handler?path=$1" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|@vite|@react-refresh|@id|@fs|src/).*)", "destination": "/index.html" }
   ]
 }
