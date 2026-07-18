@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Topbar } from '../../components/Topbar';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { formatDate } from '../../utils/formatDate';
 import { useResources, type ResourceGroups } from './useResources';
 import { ResourcePreviewModal } from './ResourcePreviewModal';
@@ -60,9 +61,10 @@ interface ResourceSectionProps {
   onEdit: (item: Resource) => void;
   onHide: (item: Resource) => void;
   onPublish: (item: Resource) => void;
+  onDelete: (item: Resource) => void;
 }
 
-function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPublish }: ResourceSectionProps) {
+function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPublish, onDelete }: ResourceSectionProps) {
   return (
     <>
       <div className="font-heading text-[16px] text-text tracking-[0.01em] mb-3 flex items-center gap-[9px]">
@@ -98,6 +100,7 @@ function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPubl
                   ) : (
                     <button onClick={() => onPublish(item)} className="text-[12.5px] font-bold text-brand bg-none border-none cursor-pointer font-sans hover:underline">Unhide</button>
                   )}
+                  <button onClick={() => onDelete(item)} className="text-[12.5px] font-bold text-accent bg-none border-none cursor-pointer font-sans hover:underline">Delete</button>
                 </div>
               </div>
             </div>
@@ -109,9 +112,10 @@ function ResourceSection({ icon, title, items, onPreview, onEdit, onHide, onPubl
 }
 
 export function ResourcesPage() {
-  const { groups, createResource, updateResource } = useResources();
+  const { groups, createResource, updateResource, deleteResource } = useResources();
   const [previewItem, setPreviewItem] = useState<Resource | null>(null);
   const [editItem, setEditItem] = useState<Resource | null>(null);
+  const [deleteItem, setDeleteItem] = useState<Resource | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
   function handleHide(item: Resource) {
@@ -120,6 +124,12 @@ export function ResourcesPage() {
 
   function handlePublish(item: Resource) {
     updateResource(item.id, { status: 'published' });
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteItem) { return; }
+    await deleteResource(deleteItem.id);
+    setDeleteItem(null);
   }
 
   const sections: { key: keyof ResourceGroups; icon: string; title: string }[] = [
@@ -152,6 +162,7 @@ export function ResourcesPage() {
             onEdit={setEditItem}
             onHide={handleHide}
             onPublish={handlePublish}
+            onDelete={setDeleteItem}
           />
         ))}
       </Card>
@@ -201,6 +212,13 @@ export function ResourcesPage() {
       <ResourcePreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
       <ResourceEditModal item={editItem} onClose={() => setEditItem(null)} onSave={updateResource} />
       <AddResourceModal open={addOpen} onClose={() => setAddOpen(false)} onCreate={createResource} />
+      <ConfirmModal
+        open={deleteItem !== null}
+        title="Delete resource?"
+        text={`Are you sure you want to permanently delete "${deleteItem?.title ?? ''}"? This can't be undone.`}
+        onCancel={() => setDeleteItem(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 }

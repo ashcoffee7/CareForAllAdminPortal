@@ -80,5 +80,12 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
     return;
   }
 
-  methodNotAllowed(res, ['PATCH']);
+  if (req.method === 'DELETE') {
+    const { error } = await supabase.from('resources').delete().eq('id', id);
+    if (error) { throw error; }
+    sendJson(res, 204, null);
+    return;
+  }
+
+  methodNotAllowed(res, ['PATCH', 'DELETE']);
 }
