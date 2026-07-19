@@ -69,7 +69,8 @@ const COUNTRY_NAMES: string[] = [
   'Paraguay', 'Uruguay', 'Guyana', 'Suriname',
   'Guatemala', 'Belize', 'Honduras', 'El Salvador', 'Nicaragua', 'Costa Rica', 'Panama',
   'Cuba', 'Jamaica', 'Haiti', 'Dominican Republic', 'Trinidad and Tobago', 'Bahamas',
-  'Barbados',
+  'Barbados', 'Antigua and Barbuda', 'Saint Lucia', 'Grenada', 'Dominica',
+  'Saint Kitts and Nevis', 'Saint Vincent and the Grenadines', 'Montserrat',
 ];
 
 const COUNTRY_ALIASES: Record<string, string> = {
@@ -78,32 +79,60 @@ const COUNTRY_ALIASES: Record<string, string> = {
   uk: 'United Kingdom', britain: 'United Kingdom', 'great britain': 'United Kingdom',
   'south korea': 'South Korea', korea: 'South Korea',
   uae: 'United Arab Emirates',
+  "cote d'ivoire": 'Ivory Coast', "côte d'ivoire": 'Ivory Coast', 'cote divoire': 'Ivory Coast',
+  'dr congo': 'Democratic Republic of the Congo', drc: 'Democratic Republic of the Congo',
 };
 
 const COUNTRY_LOOKUP: Record<string, string> = { ...COUNTRY_ALIASES };
 COUNTRY_NAMES.forEach((name) => { COUNTRY_LOOKUP[name.toLowerCase()] = name; });
 
+// Trailing periods ("MA.") and stray apostrophe-like marks (the okina in
+// "Hawai`i") show up in free-typed entries but aren't part of the actual
+// name, so they're stripped before matching.
+function normalizeSegment(segment: string): string {
+  return segment.trim().toLowerCase().replace(/\.+$/, '').replace(/[’'`ʻ]/g, '');
+}
+
+function matchSegment(seg: string): ParsedLocation | null {
+  const state = US_STATE_LOOKUP[seg];
+  if (state) { return { state, country: 'United States' }; }
+  const country = COUNTRY_LOOKUP[seg];
+  if (country) { return { state: null, country }; }
+  return null;
+}
+
 export function parseLocation(location: string | null | undefined): ParsedLocation {
   if (!location || !location.trim()) { return { state: null, country: null }; }
 
-  const segments = location.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
-
-  // "na"/"n/a" in either segment signals incomplete or placeholder data
-  // (e.g. an international member left the state segment as "NA") -- the
-  // whole entry is excluded rather than still trusting whichever other
-  // segment happens to match something.
-  if (segments.some((seg) => seg === 'na' || seg === 'n/a')) {
-    return { state: null, country: null };
-  }
+  // "na"/"n/a" segments are placeholders (e.g. an international member
+  // leaving the state segment as "NA") -- drop just that segment rather
+  // than the whole entry, so the remaining segment can still match a
+  // country.
+  const segments = location.split(/[,/]/)
+    .map(normalizeSegment)
+    .filter((seg) => seg && seg !== 'na' && seg !== 'n/a');
 
   for (const seg of segments) {
-    const state = US_STATE_LOOKUP[seg];
-    if (state) { return { state, country: 'United States' }; }
+    const match = matchSegment(seg);
+    if (match) { return match; }
   }
 
-  for (const seg of segments) {
-    const country = COUNTRY_LOOKUP[seg];
-    if (country) { return { state: null, country }; }
+  // No comma/slash delimiter (e.g. "Chesterfield Virginia", or
+  // "Zimbabwe Bulawayo" written country-first) -- fall back to checking
+  // whether the head or tail of the single segment is a known state or
+  // country name, trying the longest word-window first since names can be
+  // multiple words ("West Virginia", "United Arab Emirates").
+  if (segments.length === 1) {
+    const words = segments[0].split(/\s+/).filter(Boolean);
+    for (let windowSize = words.length - 1; windowSize >= 1; windowSize--) {
+      const suffix = words.slice(words.length - windowSize).join(' ');
+      const suffixMatch = matchSegment(suffix);
+      if (suffixMatch) { return suffixMatch; }
+
+      const prefix = words.slice(0, windowSize).join(' ');
+      const prefixMatch = matchSegment(prefix);
+      if (prefixMatch) { return prefixMatch; }
+    }
   }
 
   return { state: null, country: null };
