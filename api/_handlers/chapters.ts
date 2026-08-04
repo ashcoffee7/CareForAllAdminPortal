@@ -19,7 +19,7 @@ export async function chapters(req: VercelRequest, res: VercelResponse, ctx: Req
   if (sub) { return byId(req, res, ctx, sub); }
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase.from('chapters').select('id, name, created_at').order('name');
+    const { data, error } = await supabase.from('chapters').select('id, name, created_at, status, meta').order('name');
     if (error) { throw error; }
     sendJson(res, 200, { data });
     return;
@@ -42,14 +42,46 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
   const { supabase } = ctx;
 
   if (req.method === 'GET') {
-    const { data, error } = await supabase.from('chapters').select('id, name, created_at').eq('id', id).single();
+    const { data, error } = await supabase.from('chapters').select('id, name, created_at, status, meta').eq('id', id).single();
     if (error) { throw error; }
-    sendJson(res, 200, { data });
+
+    // Multiple chapter_leads on one chapter_id is possible in principle
+    // (though the member-facing app currently only ever promotes the
+    // original applicant) -- reported as a list so co-leads each get their
+    // own name/email rather than collapsing into one string.
+    const { data: leadProfiles, error: leadsError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .eq('chapter_id', id)
+      .eq('role', 'chapter_lead');
+    if (leadsError) { throw leadsError; }
+
+    const { data: memberProfiles, error: memberError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('chapter_id', id);
+    if (memberError) { throw memberError; }
+
+    const leadIds = (leadProfiles ?? []).map((p) => p.id);
+    const { data: leadUsers, error: usersError } = leadIds.length
+      ? await supabase.from('users').select('id, email').in('id', leadIds)
+      : { data: [] as { id: string; email: string | null }[], error: null };
+    if (usersError) { throw usersError; }
+
+    const emailById: Record<string, string | null> = {};
+    (leadUsers ?? []).forEach((u) => { emailById[u.id] = u.email; });
+
+    const leads = (leadProfiles ?? []).map((p) => ({
+      name: ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '-',
+      email: emailById[p.id] ?? null,
+    }));
+
+    sendJson(res, 200, { data: { ...data, leads, memberCount: (memberProfiles ?? []).length } });
     return;
   }
 
   if (req.method === 'PATCH') {
-    const updates: { name?: string; project_count_override?: number | null } = {};
+    const updates: { name?: string; project_count_override?: number | null; status?: string } = {};
 
     if (req.body?.name !== undefined) {
       const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
@@ -66,7 +98,16 @@ async function byId(req: VercelRequest, res: VercelResponse, ctx: RequestContext
       updates.project_count_override = override;
     }
 
-    if (Object.keys(updates).length === 0) { badRequest(res, 'name or project_count_override is required'); return; }
+    if (req.body?.status !== undefined) {
+      const status = req.body.status;
+      if (status !== 'active' && status !== 'pending' && status !== 'rejected') {
+        badRequest(res, "status must be one of 'active', 'pending', 'rejected'");
+        return;
+      }
+      updates.status = status;
+    }
+
+    if (Object.keys(updates).length === 0) { badRequest(res, 'name, project_count_override, or status is required'); return; }
 
     const { data, error } = await supabase.from('chapters').update(updates).eq('id', id).select().single();
     if (error) { throw error; }

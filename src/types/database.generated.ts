@@ -19,18 +19,24 @@ export interface Database {
           name: string;
           created_at: string;
           project_count_override: number | null;
+          status: string;
+          meta: Json | null;
         };
         Insert: {
           id?: string;
           name: string;
           created_at?: string;
           project_count_override?: number | null;
+          status?: string;
+          meta?: Json | null;
         };
         Update: {
           id?: string;
           name?: string;
           created_at?: string;
           project_count_override?: number | null;
+          status?: string;
+          meta?: Json | null;
         };
         Relationships: [];
       };
@@ -73,6 +79,18 @@ export interface Database {
           location: string | null;
           chapter_id: string | null;
           created_at: string;
+          interests: string[] | null;
+          referral_source: string | null;
+          co_lead_info: string | null;
+          over_18: boolean | null;
+          chapter_type: string | null;
+          chapter_location: string | null;
+          chapter_name: string | null;
+          advisor_name: string | null;
+          advisor_email: string | null;
+          partner_organization: string | null;
+          agreed_general_participation: boolean | null;
+          agreed_media_release: boolean | null;
         };
         Insert: {
           id: string;
@@ -85,6 +103,18 @@ export interface Database {
           location?: string | null;
           chapter_id?: string | null;
           created_at?: string;
+          interests?: string[] | null;
+          referral_source?: string | null;
+          co_lead_info?: string | null;
+          over_18?: boolean | null;
+          chapter_type?: string | null;
+          chapter_location?: string | null;
+          chapter_name?: string | null;
+          advisor_name?: string | null;
+          advisor_email?: string | null;
+          partner_organization?: string | null;
+          agreed_general_participation?: boolean | null;
+          agreed_media_release?: boolean | null;
         };
         Update: {
           id?: string;
@@ -97,6 +127,18 @@ export interface Database {
           location?: string | null;
           chapter_id?: string | null;
           created_at?: string;
+          interests?: string[] | null;
+          referral_source?: string | null;
+          co_lead_info?: string | null;
+          over_18?: boolean | null;
+          chapter_type?: string | null;
+          chapter_location?: string | null;
+          chapter_name?: string | null;
+          advisor_name?: string | null;
+          advisor_email?: string | null;
+          partner_organization?: string | null;
+          agreed_general_participation?: boolean | null;
+          agreed_media_release?: boolean | null;
         };
         Relationships: [
           {
@@ -190,6 +232,7 @@ export interface Database {
           impact_magnitude: number | null;
           secondary_impact: string | null;
           secondary_impact_magnitude: number | null;
+          proof_path: string | null;
         };
         Insert: {
           id?: string;
@@ -212,6 +255,7 @@ export interface Database {
           impact_magnitude?: number | null;
           secondary_impact?: string | null;
           secondary_impact_magnitude?: number | null;
+          proof_path?: string | null;
         };
         Update: {
           id?: string;
@@ -234,6 +278,7 @@ export interface Database {
           impact_magnitude?: number | null;
           secondary_impact?: string | null;
           secondary_impact_magnitude?: number | null;
+          proof_path?: string | null;
         };
         Relationships: [
           {
@@ -316,6 +361,178 @@ export interface Database {
           audience?: string | null;
           status?: 'published' | 'coming-soon';
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      // Drives the Project Directory carousel on the member-facing app's
+      // Mapping page (see VolunteerPortalCFA's app/api/mapping/projects).
+      mapping_projects: {
+        Row: {
+          id: string;
+          region: string;
+          country: string;
+          types: string[];
+          url: string | null;
+          color: string;
+          description: string;
+          mapping_level: string | null;
+          featured: boolean;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          region: string;
+          country: string;
+          types?: string[];
+          url?: string | null;
+          color?: string;
+          description: string;
+          mapping_level?: string | null;
+          featured?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          region?: string;
+          country?: string;
+          types?: string[];
+          url?: string | null;
+          color?: string;
+          description?: string;
+          mapping_level?: string | null;
+          featured?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      // A chapter lead's "I hosted this event" record -- see
+      // VolunteerPortalCFA's POST /api/mapping/mapathon-reports. Distinct
+      // from mapathon time-log service_logs rows.
+      mapathon_reports: {
+        Row: {
+          id: string;
+          user_id: string;
+          chapter_id: string | null;
+          event_date: string;
+          setting: string;
+          participants: number;
+          tasks_completed: number;
+          notes: string | null;
+          proof_path: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          chapter_id?: string | null;
+          event_date: string;
+          setting: string;
+          participants?: number;
+          tasks_completed?: number;
+          notes?: string | null;
+          proof_path?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          chapter_id?: string | null;
+          event_date?: string;
+          setting?: string;
+          participants?: number;
+          tasks_completed?: number;
+          notes?: string | null;
+          proof_path?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      // No member-facing signup form for these -- staff add them by hand
+      // (see api/_handlers/partners.ts).
+      partners: {
+        Row: {
+          id: string;
+          name: string;
+          website: string | null;
+          contact_name: string | null;
+          contact_email: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          website?: string | null;
+          contact_name?: string | null;
+          contact_email?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          website?: string | null;
+          contact_name?: string | null;
+          contact_email?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      // Project Hub submissions on the member-facing app (start-a-project
+      // wizard + wrap-up activity summary). See VolunteerPortalCFA's
+      // app/api/projects.
+      projects: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          type: string;
+          scope: string;
+          deadline: string | null;
+          status: string;
+          prep: boolean;
+          impl: boolean;
+          wrapup: boolean;
+          data: Json | null;
+          chapter_id: string | null;
+          contributor_ids: string[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          type: string;
+          scope?: string;
+          deadline?: string | null;
+          status?: string;
+          prep?: boolean;
+          impl?: boolean;
+          wrapup?: boolean;
+          data?: Json | null;
+          chapter_id?: string | null;
+          contributor_ids?: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          type?: string;
+          scope?: string;
+          deadline?: string | null;
+          status?: string;
+          prep?: boolean;
+          impl?: boolean;
+          wrapup?: boolean;
+          data?: Json | null;
+          chapter_id?: string | null;
+          contributor_ids?: string[];
+          created_at?: string;
         };
         Relationships: [];
       };

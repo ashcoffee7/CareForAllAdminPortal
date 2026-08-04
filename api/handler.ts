@@ -13,6 +13,11 @@ import { overview } from './_handlers/overview.js';
 import { leaderboard } from './_handlers/leaderboard.js';
 import { impact } from './_handlers/impact.js';
 import { approvals } from './_handlers/approvals.js';
+import { mappingProjects } from './_handlers/mappingProjects.js';
+import { mapathonReports } from './_handlers/mapathonReports.js';
+import { uploadsSignedUrl } from './_handlers/uploads.js';
+import { partners } from './_handlers/partners.js';
+import { formSubmissions } from './_handlers/formSubmissions.js';
 
 // Single entry point for the entire API. Every file directly under /api
 // (one per resource/verb) counts as its own Vercel Serverless Function,
@@ -59,6 +64,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'leaderboard': return await leaderboard(req, res, ctx, sub);
       case 'impact': return await impact(req, res, ctx, sub);
       case 'approvals': return await approvals(req, res, ctx, sub);
+      case 'mapping-projects': return await mappingProjects(req, res, ctx, sub);
+      case 'mapathon-reports': return await mapathonReports(req, res, ctx);
+      case 'partners': return await partners(req, res, ctx, sub);
+      case 'form-submissions': return await formSubmissions(req, res, ctx, sub);
+      case 'uploads':
+        if (sub === 'signed-url') { return await uploadsSignedUrl(req, res, ctx); }
+        sendJson(res, 404, { error: `Unknown route: /${segments.join('/')}` });
+        return;
       default:
         sendJson(res, 404, { error: `Unknown route: /${segments.join('/')}` });
     }
